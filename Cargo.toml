@@ -1,8 +1,8 @@
 [package]
 name = "ha-kiosk"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
-description = "Afficheur kiosk léger et supervisé pour les dashboards Home Assistant"
+description = "Afficheur kiosk lÃ©ger et supervisÃ© pour les dashboards Home Assistant"
 license = "MIT"
 repository = "https://github.com/Flybrow/AppHA"
 
@@ -18,7 +18,7 @@ url = { version = "2.5.8", features = ["serde"] }
 wry = "0.57.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-# MÃªme version que wry : accÃ¨s Ã  la politique TLS de WebKitGTK (certificats auto-signÃ©s).
+# MÃƒÂªme version que wry : accÃƒÂ¨s ÃƒÂ  la politique TLS de WebKitGTK (certificats auto-signÃƒÂ©s).
 webkit2gtk = { version = "2.0", features = ["v2_40"] }
 
 [profile.release]
