@@ -1,4 +1,4 @@
-//! Navigateur externe défini par l'utilisateur (`command = ["cog", "{url}"]`).
+//! External browser defined by the user (`command = ["cog", "{url}"]`).
 
 use std::path::Path;
 use std::process::Command;
@@ -11,10 +11,10 @@ use crate::config::Config;
 pub fn command(cfg: &Config) -> Result<Command> {
     let url = cfg.dashboard_url();
     let mut args = cfg.command.iter().map(|a| a.replace("{url}", url.as_str()));
-    let program = args.next().context("`command` est vide")?;
+    let program = args.next().context("`command` is empty")?;
     let mut cmd = Command::new(&program);
     cmd.args(args);
-    // cog (WPE WebKit) sait ignorer un certificat auto-signé.
+    // cog (WPE WebKit) can ignore a self-signed certificate.
     if cfg.insecure_tls && Path::new(&program).file_stem().is_some_and(|s| s == "cog") {
         cmd.arg("--ignore-tls-errors");
     }
@@ -22,7 +22,7 @@ pub fn command(cfg: &Config) -> Result<Command> {
         if auth::external_supports_token(&program) {
             cmd.args(auth::chromium_extension_args(&cfg.url, &cfg.token)?);
         } else {
-            crate::warn!("{program} ne permet pas la connexion par jeton : utilisez browser = \"webview\" ou Chromium");
+            crate::warn!("{program} does not support token login: use browser = \"webview\" or Chromium");
         }
     }
     Ok(cmd)

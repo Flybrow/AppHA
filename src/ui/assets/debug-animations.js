@@ -1,5 +1,5 @@
-// Diagnostic (HA_KIOSK_DEBUG_ANIMATIONS=1) : toutes les 10 s, envoie au journal les
-// animations actives et les boucles requestAnimationFrame, avec leur origine.
+// Diagnostics (HA_KIOSK_DEBUG_ANIMATIONS=1): every 10 s, logs the running
+// animations and requestAnimationFrame loops, with their origin.
 (() => {
   if (window.__haKioskDebug) return;
   window.__haKioskDebug = true;

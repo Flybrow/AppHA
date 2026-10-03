@@ -1,74 +1,65 @@
-# Architecture et développement
+# Architecture
 
-Ce document est destiné aux contributeurs. Le [README](../README.md) s'adresse aux utilisateurs.
+For contributors. Users: see the [README](../README.md).
 
-## Process
+## Processes
 
 ```
-cage (Linux)                         ← compositeur Wayland, lancé par systemd
-└─ ha-kiosk run                      ← superviseur (~2 Mo) : surveille, relance, met à jour
-   ├─ ha-kiosk webview               ← fenêtre + WebView (WebView2 / WebKitGTK)
-   │  └─ moteur de rendu, réseau…    ← process du navigateur
-   └─ ha-kiosk settings              ← écran de paramètres, à la demande
+cage (Linux)                     ← Wayland compositor, started by systemd
+└─ ha-kiosk run                  ← supervisor (~2 MB): monitors, restarts, updates
+   ├─ ha-kiosk webview           ← window + WebView (WebView2 / WebKitGTK)
+   │  └─ renderer, network…      ← browser processes
+   └─ ha-kiosk settings          ← settings screen, on demand
 ```
 
-- Le navigateur tourne toujours dans un **process enfant** : un crash ou une fuite mémoire n'atteint pas le superviseur, qui relance l'enfant.
-- L'enfant communique avec le superviseur par son **code de sortie** : `4` = ouvrir les paramètres. L'écran de paramètres utilise `0` = enregistré, `3` = annulé, `5` = quitter le kiosk, `6` = mis à jour.
-- Sous Linux, le superviseur s'arrête quand `cage` s'arrête (`PR_SET_PDEATHSIG`, et test `wl_display.sync` quand le navigateur meurt). Sinon, `cage` attend son enfant indéfiniment.
+- The browser always runs as a **child process**: a crash or a memory leak never reaches the supervisor, which restarts it.
+- Children talk to the supervisor through their **exit code**. WebView: `4` = open the settings. Settings: `0` saved, `3` cancelled, `5` quit the kiosk, `6` updated.
+- On Linux, the supervisor exits when `cage` stops (`PR_SET_PDEATHSIG`, plus a `wl_display.sync` probe when the browser dies). Otherwise `cage` would wait for its child forever.
 
 ## Modules (`src/`)
 
-| Module | Rôle |
+| Module | Role |
 |---|---|
-| `main.rs` | Ligne de commande et répartition des commandes |
-| `config.rs` | Lecture, validation et enregistrement atomique de `config.toml`. `Config::commit` est le point de passage unique des modifications (validation, enregistrement, démarrage automatique). |
-| `supervisor.rs` | Boucle de supervision et mise à jour en arrière-plan |
-| `backend/` | Lancement du navigateur : `webview` (intégré) ou `external` (commande) |
-| `ui/` | Fenêtre WebView commune, page de chargement, écran de paramètres, scripts injectés |
-| `cli/` | Commandes texte : `config`, `setup` (assistant), `check`, `update` ; table des réglages partagée |
-| `auth.rs` | Connexion automatique : jeton placé dans le `localStorage` du frontend HA |
-| `update.rs` | Mise à jour depuis les releases GitHub (via `curl` et `tar`) |
-| `autostart.rs` | Démarrage avec la machine : clé `Run` (Windows), service systemd (Linux) |
-| `process.rs` | Lancement de commandes auxiliaires sans fenêtre de console |
-| `display.rs` | Rotation (`wlr-randr`) et détection de l'arrêt du compositeur |
-| `health.rs` | Joignabilité de HA (connexion TCP, sans TLS) |
-| `memory.rs` | RAM de l'arbre de process du navigateur |
-| `console.rs` | Console et boîte d'erreur sous Windows (exécutable sans console) |
-| `paths.rs` | Dossiers système multiplateformes |
+| `main.rs` | Command line and dispatch |
+| `config.rs` | Load, validate and atomically save `config.toml`. `Config::commit` is the single entry point for changes (validate, save, autostart). |
+| `supervisor.rs` | Supervision loop and background updates |
+| `backend/` | Starts the browser: `webview` (built-in) or `external` (command) |
+| `ui/` | Shared WebView window, loading page, settings screen, injected scripts |
+| `cli/` | Text commands: `config`, `setup` (wizard), `check`, `update`; shared settings table |
+| `i18n.rs` | English / French. Texts are inline pairs: `tr!("English", "Français")` |
+| `auth.rs` | Automatic login: token stored in the HA frontend's `localStorage` |
+| `update.rs` | Updates from GitHub releases (`curl`, plus `tar` on Linux) |
+| `autostart.rs` | Start with the machine: `Run` registry key (Windows), systemd service (Linux) |
+| `display.rs` | Rotation (`wlr-randr`) and compositor shutdown detection |
+| `health.rs` | HA reachability (TCP connect, no TLS) |
+| `memory.rs` | RAM of the browser process tree |
+| `process.rs` | Auxiliary commands without a console window |
+| `console.rs` | Console and error dialog on Windows (executable without a console) |
+| `paths.rs` | Cross-platform system directories |
 
-### Scripts injectés dans les pages (`src/ui/assets/`)
+Injected into pages (`src/ui/assets/`): `gesture.js` (5 taps / F10 open the settings), `inject-css.js` (stylesheet applied to the document **and every shadow root**), `debug-animations.js` (only with `HA_KIOSK_DEBUG_ANIMATIONS=1`). The HTML pages carry English text plus `data-fr` attributes; JavaScript uses `t("en", "fr")`.
 
-| Fichier | Rôle |
-|---|---|
-| `gesture.js` | 5 tapes dans le coin haut-gauche, F10 ou Ctrl+, : ouvre les paramètres |
-| `inject-css.js` | Style appliqué au document **et à chaque shadow root** (animations à 1 ms, curseur masqué) |
-| `debug-animations.js` | Diagnostic, actif seulement avec `HA_KIOSK_DEBUG_ANIMATIONS=1` |
-| `loading.html` | Page d'attente locale ; le test de joignabilité est fait côté Rust |
-| `settings.html` | Écran de paramètres |
+## Design choices
 
-## Choix techniques
+- **Animations at 1 ms rather than removed**: on a Raspberry Pi 3, HA frontend animations kept the CPU at 130 %; 1 ms brings it to 5 %. Removing them entirely breaks cards waiting for `transitionend` (Bubble Card popups).
+- **GPU off by default**: saves ~70 MB on Windows; on a Pi 3, WebKit cannot render on that GPU anyway.
+- **Updates through `curl`**: no bundled TLS stack, no RAM used between checks. On Windows the release asset is the `.exe` itself (versions ≤ 0.9.0 expected a `.zip` and must be downloaded again once).
+- **Linux install**: binary in `/opt/ha-kiosk`, config in `/etc/ha-kiosk` (`0600`), both owned by the kiosk user, so the settings screen and updates work without root.
+- **WebKit sandbox disabled** in the systemd service: bubblewrap fails there and gives a black screen. The kiosk only shows Home Assistant.
 
-- **Animations à 1 ms plutôt que supprimées** : sur un Raspberry Pi 3, les animations du frontend HA faisaient monter le processeur à 130 % en continu. Le passage à 1 ms le ramène à 5 %. Les supprimer complètement casserait les cartes qui attendent `transitionend` (popups Bubble Card).
-- **GPU désactivé par défaut** : environ 70 Mo économisés sous Windows. Sur un Pi 3, WebKit ne peut de toute façon pas faire le rendu sur ce GPU.
-- **Mise à jour par `curl` (et `tar` sous Linux)** : aucune pile TLS embarquée, et aucune RAM utilisée entre deux vérifications. Sous Windows, l'asset de release est directement l'`.exe`. Les versions 0.9.0 et antérieures attendaient un `.zip` : elles doivent être retéléchargées une fois.
-- **Installation Linux** : binaire dans `/opt/ha-kiosk` et config `0600`, tous deux propriété de l'utilisateur du kiosk. Ainsi, l'écran de paramètres et la mise à jour fonctionnent sans root.
-- **Bac à sable WebKit désactivé** (service systemd) : bubblewrap échoue sous ce service et provoque un écran noir. Le kiosk n'affiche que Home Assistant.
-
-## Compiler et tester
+## Build and test
 
 ```sh
 cargo test
 cargo build --release
 ```
 
-Sous Linux, il faut installer `libwebkit2gtk-4.1-dev` et `libgtk-3-dev`.
+Linux needs `libwebkit2gtk-4.1-dev` and `libgtk-3-dev`.
 
-Diagnostic des animations : `HA_KIOSK_DEBUG_ANIMATIONS=1 ha-kiosk run`, puis lire les lignes `animations {…}` du journal.
+## Release
 
-## Publier une version
+1. Bump `version` in `Cargo.toml`.
+2. Push to `main`: CI runs the tests and builds binaries, available as artifacts for testing.
+3. Once validated, push a `vX.Y.Z` tag: CI checks it matches `Cargo.toml` and publishes the release.
 
-1. Mettez à jour `version` dans `Cargo.toml`.
-2. Poussez sur `main` : la CI lance les tests et construit les binaires, qui sont disponibles en artefacts pour tester.
-3. Après validation, créez le tag `vX.Y.Z` et poussez-le. La CI vérifie que le tag correspond à `Cargo.toml` et publie la release.
-
-Attention : les kiosks installés se mettent à jour seuls depuis la dernière release. Un tag part donc directement en production.
+Installed kiosks update themselves from the latest release: a tag goes straight to production.

@@ -1,4 +1,4 @@
-//! Vérification de joignabilité de Home Assistant (connexion TCP, sans pile TLS).
+//! Home Assistant reachability check (TCP connection, no TLS stack).
 
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
@@ -7,7 +7,7 @@ use url::Url;
 
 const TIMEOUT: Duration = Duration::from_secs(3);
 
-/// Vrai si l'hôte:port de `url` accepte une connexion TCP.
+/// True if the host:port of `url` accepts a TCP connection.
 pub fn is_reachable(url: &Url) -> bool {
     let (Some(host), Some(port)) = (url.host_str(), url.port_or_known_default()) else {
         return false;

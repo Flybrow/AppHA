@@ -1,5 +1,5 @@
-//! Lancement du navigateur choisi, toujours sous forme de process enfant
-//! afin que le superviseur le traite de la même façon quel que soit le backend.
+//! Starts the chosen browser, always as a child process, so the supervisor
+//! handles every backend the same way.
 
 mod external;
 pub mod webview;
@@ -11,9 +11,9 @@ use anyhow::{Context, Result};
 
 use crate::config::{Browser, Config};
 
-/// Sous-commande interne qui exécute la WebView intégrée.
+/// Internal subcommand running the built-in WebView.
 pub const WEBVIEW_SUBCOMMAND: &str = "webview";
-/// Sous-commande qui ouvre l'écran de paramètres.
+/// Subcommand opening the settings screen.
 pub const SETTINGS_SUBCOMMAND: &str = "settings";
 
 pub fn spawn(cfg: &Config, config_path: &Path) -> Result<Child> {
@@ -22,12 +22,12 @@ pub fn spawn(cfg: &Config, config_path: &Path) -> Result<Child> {
         _ => self_command(config_path, WEBVIEW_SUBCOMMAND)?,
     };
     die_with_parent_on_exec(&mut cmd);
-    cmd.spawn().with_context(|| format!("lancement de {:?}", cmd.get_program()))
+    cmd.spawn().with_context(|| format!("starting {:?}", cmd.get_program()))
 }
 
-/// Linux : reçoit SIGTERM quand le process parent meurt. Sous systemd avec
-/// `PAMName=`, les process quittent le cgroup du service : sans cela, l'arrêt de
-/// cage laisserait le superviseur et le navigateur orphelins.
+/// Linux: receive SIGTERM when the parent process dies. Under systemd with
+/// `PAMName=`, processes leave the service cgroup: without this, stopping cage
+/// would leave the supervisor and browser orphaned.
 #[cfg(target_os = "linux")]
 pub fn die_with_parent() {
     const PR_SET_PDEATHSIG: i32 = 1;
@@ -41,7 +41,7 @@ pub fn die_with_parent() {
 #[cfg(not(target_os = "linux"))]
 pub fn die_with_parent() {}
 
-/// Le navigateur lancé s'arrête avec le superviseur.
+/// The started browser stops with the supervisor.
 fn die_with_parent_on_exec(cmd: &mut Command) {
     #[cfg(target_os = "linux")]
     {
@@ -52,24 +52,24 @@ fn die_with_parent_on_exec(cmd: &mut Command) {
     let _ = cmd;
 }
 
-/// Issue de l'écran de paramètres.
+/// Outcome of the settings screen.
 #[derive(PartialEq, Eq)]
 pub enum SettingsOutcome {
     Saved,
     Cancelled,
     Quit,
-    /// Une nouvelle version a été installée depuis les paramètres.
+    /// A new version was installed from the settings.
     Updated,
 }
 
-/// Ouvre l'écran de paramètres dans un process enfant et attend sa fermeture.
+/// Opens the settings screen in a child process and waits for it to close.
 pub fn open_settings(config_path: &Path, can_cancel: bool) -> Result<SettingsOutcome> {
     let mut cmd = self_command(config_path, SETTINGS_SUBCOMMAND)?;
     die_with_parent_on_exec(&mut cmd);
     if !can_cancel {
         cmd.arg("--first-run");
     }
-    let status = cmd.status().context("lancement des paramètres")?;
+    let status = cmd.status().context("starting the settings screen")?;
     Ok(match status.code() {
         Some(crate::ui::settings::SAVED) => SettingsOutcome::Saved,
         Some(crate::ui::settings::QUIT) => SettingsOutcome::Quit,
@@ -78,9 +78,9 @@ pub fn open_settings(config_path: &Path, can_cancel: bool) -> Result<SettingsOut
     })
 }
 
-/// Relance l'exécutable courant avec la sous-commande donnée.
+/// Runs the current executable with the given subcommand.
 fn self_command(config_path: &Path, subcommand: &str) -> Result<Command> {
-    let exe = std::env::current_exe().context("chemin de l'exécutable")?;
+    let exe = std::env::current_exe().context("executable path")?;
     let mut cmd = Command::new(exe);
     cmd.arg("--config").arg(config_path).arg(subcommand);
     Ok(cmd)

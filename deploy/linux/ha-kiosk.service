@@ -9,17 +9,17 @@ PAMName=login
 TTYPath=/dev/tty1
 StandardInput=tty
 StandardError=journal
-# PAMName= place les process dans la session : `journalctl -u` ne les voit pas.
+# PAMName= puts the processes in the session: `journalctl -u` does not see them.
 # Logs : journalctl -t ha-kiosk -f
 SyslogIdentifier=ha-kiosk
 Environment=XDG_RUNTIME_DIR=/run/user/%KIOSK_UID%
-# Le bac à sable bubblewrap de WebKit échoue sous ce service (« Unexpected capabilities ») :
-# écran noir. Le kiosk n'affiche que Home Assistant, on le désactive.
+# WebKit's bubblewrap sandbox fails under this service ("Unexpected capabilities"):
+# black screen. The kiosk only shows Home Assistant, so it is disabled.
 Environment=WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
 TimeoutStopSec=10
-# cage : compositeur Wayland mono-application (aucun bureau, aucun gestionnaire de fenêtres).
+# cage: single-application Wayland compositor (no desktop, no window manager).
 ExecStart=/usr/bin/cage -d -- /usr/local/bin/ha-kiosk --config /etc/ha-kiosk/config.toml run
-# on-failure : « Quitter le kiosk » (sortie normale) arrête le service.
+# on-failure: "Quit the kiosk" (normal exit) stops the service.
 Restart=on-failure
 RestartSec=3
 

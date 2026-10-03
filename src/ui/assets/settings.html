@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Paramètres — HA Kiosk</title>
+<title>Settings — HA Kiosk</title>
 <style>/*THEME*/</style>
 <style>
   body { overflow-y: auto; }
@@ -35,130 +35,142 @@
 </head>
 <body>
 <main>
-  <h1>Paramètres</h1>
-  <div class="muted">HA Kiosk — affichage de votre dashboard Home Assistant</div>
+  <h1 data-fr="Paramètres">Settings</h1>
+  <div class="muted" data-fr="HA Kiosk — affichage de votre dashboard Home Assistant">HA Kiosk — shows your Home Assistant dashboard</div>
 
   <section>
     <h2>Home Assistant</h2>
-    <label><span class="name">Adresse</span>
-      <div class="hint">http(s)://IP-ou-domaine:port — local, HTTPS ou Nabu Casa.</div>
+    <label><span class="name" data-fr="Adresse">Address</span>
+      <div class="hint" data-fr="http(s)://IP-ou-domaine:port — local, HTTPS ou Nabu Casa.">http(s)://IP-or-domain:port — local, HTTPS or Nabu Casa.</div>
       <div class="inline">
         <input type="url" data-key="url" placeholder="http://homeassistant.local:8123" required>
-        <button type="button" id="test">Tester</button>
+        <button type="button" id="test" data-fr="Tester">Test</button>
       </div>
     </label>
     <label><span class="name">Dashboard</span>
-      <div class="hint">Chemin du dashboard, ex. <code>lovelace-kiosk/0</code>. Vide = dashboard par défaut.</div>
+      <div class="hint" data-fr="Chemin du dashboard, ex. &lt;code&gt;lovelace-kiosk/0&lt;/code&gt;. Vide = dashboard par défaut.">Dashboard path, e.g. <code>lovelace-kiosk/0</code>. Empty = default dashboard.</div>
       <input type="text" data-key="dashboard" placeholder="lovelace/0">
     </label>
-    <label><span class="name">Jeton d'accès longue durée</span>
-      <div class="hint">Profil HA › Sécurité › Jetons d'accès longue durée. Connexion automatique ; vide = écran de connexion HA.</div>
+    <label><span class="name" data-fr="Jeton d'accès longue durée">Long-lived access token</span>
+      <div class="hint" data-fr="Profil HA › Sécurité › Jetons d'accès longue durée. Vide = écran de connexion HA.">HA profile › Security › Long-lived access tokens. Empty = HA login screen.</div>
       <div class="inline">
         <input type="password" data-key="token" autocomplete="off">
-        <button type="button" id="reveal">Afficher</button>
+        <button type="button" id="reveal" data-fr="Afficher">Show</button>
       </div>
     </label>
     <label class="check"><input type="checkbox" data-key="insecure_tls">
-      <span><span class="name">Accepter un certificat auto-signé</span>
-      <div class="hint">Windows uniquement. Sous Linux, installez le certificat dans le système.</div></span>
+      <span class="name" data-fr="Accepter un certificat auto-signé">Accept a self-signed certificate</span>
     </label>
   </section>
 
   <section>
-    <h2>Affichage</h2>
-    <label><span class="name">Mode d'affichage</span>
+    <h2 data-fr="Affichage">Display</h2>
+    <label><span class="name" data-fr="Langue">Language</span>
+      <select data-key="language">
+        <option value="auto" data-fr="Langue du système">System language</option>
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+      </select>
+    </label>
+    <label><span class="name" data-fr="Mode d'affichage">Display mode</span>
       <select data-key="window.mode">
-        <option value="fullscreen">Plein écran</option>
-        <option value="windowed">Fenêtré</option>
-        <option value="borderless">Fenêtré sans bordure</option>
+        <option value="fullscreen" data-fr="Plein écran">Full screen</option>
+        <option value="windowed" data-fr="Fenêtré">Windowed</option>
+        <option value="borderless" data-fr="Fenêtré sans bordure">Borderless window</option>
       </select>
     </label>
     <div class="row">
-      <label><span class="name">Largeur</span><input type="number" min="200" data-key="window.width"></label>
-      <label><span class="name">Hauteur</span><input type="number" min="200" data-key="window.height"></label>
+      <label><span class="name" data-fr="Largeur">Width</span><input type="number" min="200" data-key="window.width"></label>
+      <label><span class="name" data-fr="Hauteur">Height</span><input type="number" min="200" data-key="window.height"></label>
     </div>
-    <label><span class="name">Rotation de l'écran</span>
+    <label><span class="name" data-fr="Rotation de l'écran">Screen rotation</span>
       <select data-key="window.rotation" data-number>
-        <option value="0">Normale</option>
+        <option value="0" data-fr="Normale">Normal</option>
         <option value="90">90° (portrait)</option>
-        <option value="180">180° (retournée)</option>
-        <option value="270">270° (portrait inversé)</option>
+        <option value="180" data-fr="180° (retournée)">180° (upside down)</option>
+        <option value="270" data-fr="270° (portrait inversé)">270° (portrait, flipped)</option>
       </select>
-      <div class="hint">Linux (cage) uniquement. Sous Windows : paramètres d'affichage du système.</div>
+      <div class="hint" data-fr="Linux uniquement. Sous Windows : paramètres d'affichage du système.">Linux only. On Windows: system display settings.</div>
     </label>
     <label class="check"><input type="checkbox" data-key="window.animations">
       <span><span class="name">Animations</span>
-      <div class="hint">Désactivées, l'affichage est bien plus fluide sur les petites machines (Raspberry Pi).</div></span>
+      <div class="hint" data-fr="Désactivées, l'affichage est bien plus fluide sur les petites machines (Raspberry Pi).">Off, the display is much smoother on small machines (Raspberry Pi).</div></span>
     </label>
     <label class="check"><input type="checkbox" data-key="window.hide_cursor">
-      <span class="name">Masquer le curseur (écran tactile)</span>
+      <span class="name" data-fr="Masquer le curseur (écran tactile)">Hide the cursor (touch screen)</span>
     </label>
     <label class="check"><input type="checkbox" data-key="window.gpu">
-      <span><span class="name">Accélération matérielle (GPU)</span>
-      <div class="hint">Animations plus fluides, mais environ 70 Mo de RAM en plus.</div></span>
+      <span><span class="name" data-fr="Accélération matérielle (GPU)">Hardware acceleration (GPU)</span>
+      <div class="hint" data-fr="Environ 70 Mo de RAM en plus. Inutile sur Raspberry Pi 3.">About 70 MB more RAM. Useless on a Raspberry Pi 3.</div></span>
     </label>
-    <label><span class="name">Navigateur</span>
+    <label><span class="name" data-fr="Navigateur">Browser</span>
       <select data-key="browser" id="browser">
-        <option value="auto">Automatique (recommandé)</option>
-        <option value="webview">Intégré</option>
-        <option value="external">Externe (cog, Chromium…)</option>
+        <option value="auto" data-fr="Automatique (recommandé)">Automatic (recommended)</option>
+        <option value="webview" data-fr="Intégré">Built-in</option>
+        <option value="external" data-fr="Externe (cog, Chromium…)">External (cog, Chromium…)</option>
       </select>
     </label>
-    <label id="command-field"><span class="name">Commande du navigateur externe</span>
-      <div class="hint">Un argument par ligne ; <code>{url}</code> = adresse du dashboard. Les paramètres ne seront plus accessibles depuis l'écran.</div>
+    <label id="command-field"><span class="name" data-fr="Commande du navigateur externe">External browser command</span>
+      <div class="hint" data-fr="Un argument par ligne ; &lt;code&gt;{url}&lt;/code&gt; = adresse du dashboard. Les paramètres ne seront plus accessibles depuis l'écran.">One argument per line; <code>{url}</code> = dashboard address. The settings will no longer open from the screen.</div>
       <textarea rows="3" data-key="command" data-list></textarea>
     </label>
   </section>
 
   <section>
-    <h2>Stabilité</h2>
-    <label><span class="name">Redémarrage préventif (heures)</span>
-      <div class="hint">0 = jamais.</div>
+    <h2 data-fr="Stabilité">Stability</h2>
+    <label class="check"><input type="checkbox" data-key="autostart">
+      <span><span class="name" data-fr="Lancer au démarrage de la machine">Start with the machine</span>
+      <div class="hint" data-fr="Linux : nécessite sudo (ha-kiosk config autostart).">Linux: requires sudo (ha-kiosk config autostart).</div></span>
+    </label>
+    <label><span class="name" data-fr="Redémarrage préventif (heures)">Preventive restart (hours)</span>
+      <div class="hint" data-fr="0 = jamais.">0 = never.</div>
       <input type="number" min="0" data-key="supervisor.restart_every_hours">
     </label>
-    <label><span class="name">Limite de RAM du navigateur (Mo)</span>
-      <div class="hint">Au-delà, le navigateur est relancé. 0 = aucune limite. Ex. 350 sur un Raspberry Pi 3.</div>
+    <label><span class="name" data-fr="Limite de RAM du navigateur (Mo)">Browser RAM limit (MB)</span>
+      <div class="hint" data-fr="Au-delà, le navigateur est relancé. 0 = aucune limite. Ex. 350 sur un Raspberry Pi 3.">Above it, the browser is restarted. 0 = no limit. E.g. 350 on a Raspberry Pi 3.</div>
       <input type="number" min="0" data-key="supervisor.max_memory_mb">
     </label>
     <label class="check"><input type="checkbox" data-key="supervisor.reload_on_reconnect">
-      <span class="name">Recharger quand Home Assistant redevient joignable</span>
+      <span class="name" data-fr="Recharger quand Home Assistant redevient joignable">Reload when Home Assistant is reachable again</span>
     </label>
     <div class="row">
-      <label><span class="name">Vérification toutes les (s)</span><input type="number" min="1" data-key="supervisor.check_interval_secs"></label>
-      <label><span class="name">Échecs avant coupure</span><input type="number" min="1" data-key="supervisor.failures_before_down"></label>
+      <label><span class="name" data-fr="Vérification toutes les (s)">Check every (s)</span><input type="number" min="1" data-key="supervisor.check_interval_secs"></label>
+      <label><span class="name" data-fr="Échecs avant coupure">Failures before down</span><input type="number" min="1" data-key="supervisor.failures_before_down"></label>
     </div>
   </section>
 
   <section>
-    <h2>Mises à jour</h2>
-    <label class="check"><input type="checkbox" data-key="autostart">
-      <span><span class="name">Lancer au démarrage de la machine</span>
-      <div class="hint">Linux : nécessite sudo (ha-kiosk config autostart).</div></span>
-    </label>
+    <h2 data-fr="Mises à jour">Updates</h2>
     <label class="check"><input type="checkbox" data-key="auto_update">
-      <span><span class="name">Mise à jour automatique</span>
-      <div class="hint">Vérification toutes les 6 h.</div></span>
+      <span><span class="name" data-fr="Mise à jour automatique">Automatic updates</span>
+      <div class="hint" data-fr="Vérification toutes les 6 h.">Checked every 6 h.</div></span>
     </label>
     <div class="inline">
       <span class="name" id="version"></span>
-      <button type="button" id="update-check">Rechercher une mise à jour</button>
-      <button type="button" class="primary" id="update-install" hidden>Installer</button>
+      <button type="button" id="update-check" data-fr="Rechercher une mise à jour">Check for updates</button>
+      <button type="button" class="primary" id="update-install" hidden></button>
     </div>
   </section>
 
-  <p class="muted">Pour revenir ici depuis le dashboard : 5 tapes rapides dans le coin haut-gauche, ou F10.</p>
+  <p class="muted" data-fr="Pour revenir ici depuis le dashboard : 5 tapes rapides dans le coin haut-gauche, ou F10.">To come back here from the dashboard: tap the top-left corner 5 times quickly, or press F10.</p>
 </main>
 
 <footer>
   <span id="message" role="status"></span>
-  <button type="button" id="quit">Quitter le kiosk</button>
-  <button type="button" id="cancel">Annuler</button>
-  <button type="button" class="link" id="save-quit">Enregistrer et fermer</button>
-  <button type="button" class="primary" id="save">Enregistrer et lancer</button>
+  <button type="button" id="quit" data-fr="Quitter le kiosk">Quit the kiosk</button>
+  <button type="button" id="cancel" data-fr="Annuler">Cancel</button>
+  <button type="button" class="link" id="save-quit" data-fr="Enregistrer et fermer">Save and close</button>
+  <button type="button" class="primary" id="save" data-fr="Enregistrer et lancer">Save and start</button>
 </footer>
 
 <script>
-  const INITIAL = /*CONFIG*/, CAN_CANCEL = /*CAN_CANCEL*/, VERSION = /*VERSION*/;
+  const INITIAL = /*CONFIG*/, CAN_CANCEL = /*CAN_CANCEL*/, VERSION = /*VERSION*/, LANG = /*LANG*/;
+  const t = (en, fr) => (LANG === "fr" ? fr : en);
+  if (LANG === "fr") {
+    document.documentElement.lang = "fr";
+    document.querySelectorAll("[data-fr]").forEach((el) => (el.innerHTML = el.dataset.fr));
+  }
+
   const fields = [...document.querySelectorAll("[data-key]")];
   const $ = (id) => document.getElementById(id);
 
@@ -182,7 +194,7 @@
 
   function collect() {
     const cfg = structuredClone(INITIAL);
-    // Une liste sans option correspondant à la valeur d'origine renvoie "" : on garde l'origine.
+    // A select without an option for the original value reads "": keep the original.
     fields.forEach((el) => {
       if (el.tagName === "SELECT" && el.value === "") return;
       setPath(cfg, el.dataset.key, read(el));
@@ -193,19 +205,22 @@
   function message(text, cls = "") { $("message").textContent = text; $("message").className = cls; }
   const send = (msg) => window.ipc.postMessage(JSON.stringify(msg));
 
-  // Réponses appelées par Rust.
+  // Called back by Rust.
   window.onTestResult = (ok) => {
     $("test").disabled = false;
-    message(ok ? "Home Assistant joignable ✔" : "Home Assistant injoignable", ok ? "ok" : "err");
+    message(ok ? t("Home Assistant reachable ✔", "Home Assistant joignable ✔") : t("Home Assistant unreachable", "Home Assistant injoignable"), ok ? "ok" : "err");
   };
   window.showError = (text) => { $("save").disabled = $("save-quit").disabled = false; message(text, "err"); };
-  // état : "none" (à jour), "available" (tag), "error" (texte), "installing".
+  // state: "none" (up to date), "available" (tag), "error" (text).
   window.onUpdate = (state, detail) => {
     $("update-check").disabled = false;
     $("update-install").disabled = false;
     $("update-install").hidden = state !== "available";
-    if (state === "none") message(`Version ${VERSION} à jour ✔`, "ok");
-    if (state === "available") { $("update-install").textContent = `Installer ${detail}`; message(`Nouvelle version ${detail} disponible`, "ok"); }
+    if (state === "none") message(t(`Version ${VERSION} is up to date ✔`, `Version ${VERSION} à jour ✔`), "ok");
+    if (state === "available") {
+      $("update-install").textContent = t(`Install ${detail}`, `Installer ${detail}`);
+      message(t(`New version ${detail} available`, `Nouvelle version ${detail} disponible`), "ok");
+    }
     if (state === "error") message(detail, "err");
   };
 
@@ -214,39 +229,39 @@
   fields.forEach((el) => write(el, getPath(INITIAL, el.dataset.key)));
   syncBrowser();
   $("cancel").hidden = !CAN_CANCEL;
+  $("version").textContent = `Version ${VERSION}`;
 
   $("browser").addEventListener("change", syncBrowser);
   $("reveal").addEventListener("click", () => {
     const input = document.querySelector("[data-key=token]");
     input.type = input.type === "password" ? "text" : "password";
-    $("reveal").textContent = input.type === "password" ? "Afficher" : "Masquer";
+    $("reveal").textContent = input.type === "password" ? t("Show", "Afficher") : t("Hide", "Masquer");
   });
   $("test").addEventListener("click", () => {
     $("test").disabled = true;
-    message("Test en cours…", "muted");
+    message(t("Testing…", "Test en cours…"), "muted");
     send({ action: "test", url: read(document.querySelector("[data-key=url]")) });
   });
   const save = (quit) => {
     $("save").disabled = $("save-quit").disabled = true;
-    message("Enregistrement…", "muted");
+    message(t("Saving…", "Enregistrement…"), "muted");
     send({ action: "save", config: collect(), quit });
   };
   $("save").addEventListener("click", () => save(false));
   $("save-quit").addEventListener("click", () => save(true));
   $("cancel").addEventListener("click", () => send({ action: "cancel" }));
-  $("version").textContent = `Version ${VERSION}`;
   $("update-check").addEventListener("click", () => {
     $("update-check").disabled = true;
-    message("Recherche…", "muted");
+    message(t("Checking…", "Recherche…"), "muted");
     send({ action: "update_check" });
   });
   $("update-install").addEventListener("click", () => {
     $("update-install").disabled = true;
-    message("Téléchargement et installation… le kiosk redémarrera.", "muted");
+    message(t("Downloading and installing… the kiosk will restart.", "Téléchargement et installation… le kiosk redémarrera."), "muted");
     send({ action: "update_install" });
   });
   $("quit").addEventListener("click", () => {
-    if (confirm("Arrêter complètement le kiosk ?")) send({ action: "quit" });
+    if (confirm(t("Stop the kiosk completely?", "Arrêter complètement le kiosk ?"))) send({ action: "quit" });
   });
 </script>
 </body>

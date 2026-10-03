@@ -1,4 +1,4 @@
-//! `ha-kiosk config [réglage] [valeur]` : lit ou modifie un seul réglage.
+//! `ha-kiosk config [name] [value]`: shows or changes one setting.
 
 use std::path::Path;
 
@@ -6,6 +6,7 @@ use anyhow::Result;
 
 use super::settings::{self, SETTINGS};
 use crate::config::Config;
+use crate::tr;
 
 pub fn run(path: &Path, name: Option<&str>, value: Option<&str>) -> Result<()> {
     let mut cfg = Config::editable_json(path);
@@ -14,7 +15,7 @@ pub fn run(path: &Path, name: Option<&str>, value: Option<&str>) -> Result<()> {
         for s in SETTINGS {
             println!("  {:<22} {}", s.name, s.display(&cfg));
         }
-        println!("\nModifier : ha-kiosk config <réglage> [valeur]");
+        println!("\n{} ha-kiosk config <{}> [{}]", tr!("Change:", "Modifier :"), tr!("name", "nom"), tr!("value", "valeur"));
         return Ok(());
     };
     let setting = settings::find(name)?;
@@ -24,7 +25,7 @@ pub fn run(path: &Path, name: Option<&str>, value: Option<&str>) -> Result<()> {
     };
     setting.set(&mut cfg, new)?;
     Config::commit(cfg, path)?;
-    println!("{} enregistré dans {}", setting.name, path.display());
+    println!("{} {} {}", setting.name, tr!("saved in", "enregistré dans"), path.display());
     super::apply_hint();
     Ok(())
 }

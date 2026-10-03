@@ -1,50 +1,53 @@
-# Copier en `config.toml` à côté de l'exécutable
-# (ou dans %APPDATA%\ha-kiosk\ / ~/.config/ha-kiosk/).
+# Copy to `config.toml` next to the executable
+# (or into %APPDATA%\ha-kiosk\ / ~/.config/ha-kiosk/ / /etc/ha-kiosk/).
+# Easier: `ha-kiosk setup` (wizard) or the settings screen.
 
-# Adresse de Home Assistant (http, https, IP locale, nom de domaine, Nabu Casa...).
+# Home Assistant address (http, https, local IP, domain name, Nabu Casa...).
 url = "https://homeassistant.local:8123"
 
-# Chemin du dashboard (vide = dashboard par défaut). Ex. "lovelace-kiosk/0".
+# Dashboard path (empty = default dashboard), e.g. "lovelace-kiosk/0".
 dashboard = ""
 
-# Jeton longue durée (Profil HA > Sécurité > Jetons d'accès longue durée).
-# Connexion automatique avec le navigateur `webview`. Vide = écran de connexion.
+# Long-lived access token (HA profile > Security > Long-lived access tokens).
+# Automatic login. Empty = HA login screen.
 token = ""
 
+# Interface language: auto (system) | en | fr
+language = "auto"
+
 # auto | webview | external
-#  - auto     : webview (connexion par jeton + paramètres à l'écran)
-#  - webview  : WebView2 (Windows) / WebKitGTK (Linux) intégrée
-#  - external : la commande ci-dessous
+#  - auto     : webview (token login + on-screen settings)
+#  - webview  : built-in WebView2 (Windows) / WebKitGTK (Linux)
+#  - external : the command below
 browser = "auto"
 
-# Commande du navigateur externe ; {url} est remplacé par l'URL du dashboard.
-# Exemples :
+# External browser command; {url} is replaced by the dashboard URL.
+# Examples:
 #   ["cog", "--platform=drm", "{url}"]
 #   ["chromium", "--kiosk", "--noerrdialogs", "--disable-infobars", "--renderer-process-limit=1", "{url}"]
 command = ["cog", "{url}"]
 
-# Accepter un certificat HTTPS auto-signé (WebView2, WebKitGTK, cog).
+# Accept a self-signed HTTPS certificate (WebView2, WebKitGTK, cog).
 insecure_tls = false
 
-# Lancement automatique au démarrage de la machine (Windows : session utilisateur ;
-# Linux : service systemd, modifiable avec sudo).
+# Start with the machine (Windows: user session; Linux: systemd service, change with sudo).
 autostart = true
 
-# Mise à jour automatique depuis les releases GitHub (vérification toutes les 6 h).
+# Automatic updates from GitHub releases (checked every 6 h).
 auto_update = true
 
 [window]
-mode = "fullscreen"   # fullscreen | windowed | borderless (fenêtré sans bordure)
-width = 1280          # taille en modes windowed / borderless
+mode = "fullscreen"   # fullscreen | windowed | borderless
+width = 1280          # size in windowed / borderless modes
 height = 800
-gpu = false           # accélération matérielle : +~70 Mo ; inutile sur Pi 3 (GPU trop ancien)
-animations = false    # false = bien plus fluide sur Pi (défaut sous Linux)
-hide_cursor = false   # true = curseur masqué (écran tactile)
-rotation = 0          # 0 | 90 | 180 | 270 (Linux/cage ; écran officiel Pi retourné : 180)
+gpu = false           # hardware acceleration: +~70 MB; useless on a Pi 3 (GPU too old)
+animations = false    # false = much smoother on a Pi (default on Linux)
+hide_cursor = false   # true = hidden cursor (touch screen)
+rotation = 0          # 0 | 90 | 180 | 270 (Linux/cage; official Pi screen upside down: 180)
 
 [supervisor]
 check_interval_secs = 10
-restart_every_hours = 24     # 0 = jamais
-max_memory_mb = 0            # 0 = pas de limite (ex. 350 sur un Pi 3)
+restart_every_hours = 24     # 0 = never
+max_memory_mb = 0            # 0 = no limit (e.g. 350 on a Pi 3)
 reload_on_reconnect = true
 failures_before_down = 3

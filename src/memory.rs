@@ -1,5 +1,5 @@
-//! Mesure de la RAM consommée par un process et tous ses descendants
-//! (un navigateur moderne lance plusieurs sous-process).
+//! RAM used by a process and all its descendants
+//! (a modern browser starts several sub-processes).
 
 use std::collections::HashSet;
 
@@ -14,7 +14,7 @@ impl MemoryProbe {
         Self { sys: System::new() }
     }
 
-    /// RAM résidente totale (en Mo) de `root` et de ses descendants.
+    /// Total resident RAM (MB) of `root` and its descendants.
     pub fn tree_mb(&mut self, root: u32) -> u64 {
         self.sys.refresh_processes_specifics(
             ProcessesToUpdate::All,
@@ -22,7 +22,7 @@ impl MemoryProbe {
             ProcessRefreshKind::nothing().with_memory(),
         );
         let mut tree: HashSet<Pid> = HashSet::from([Pid::from_u32(root)]);
-        // Propagation jusqu'à stabilité : la table des process n'est pas ordonnée.
+        // Propagate until stable: the process table is not ordered.
         loop {
             let before = tree.len();
             for (pid, proc_) in self.sys.processes() {

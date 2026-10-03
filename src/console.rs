@@ -1,14 +1,14 @@
-//! Sortie console d'un exécutable sans console (sous-système Windows « windows »).
+//! Console output for an executable without a console (Windows "windows" subsystem).
 
-/// Rattache la console du terminal parent, s'il y en a un, pour que les messages
-/// restent visibles en ligne de commande. Vrai si une console est disponible.
+/// Attaches the parent terminal's console, if any, so messages stay visible on
+/// the command line. True if a console is available.
 pub fn attach() -> bool {
     let attached = attach_parent();
     let _ = ATTACHED.set(attached);
     attached
 }
 
-/// Résultat de `attach` (faux s'il n'a pas été appelé).
+/// Result of `attach` (false if it was not called).
 pub fn attached() -> bool {
     ATTACHED.get().copied().unwrap_or(false)
 }
@@ -29,7 +29,7 @@ fn attach_parent() -> bool {
     true
 }
 
-/// Affiche une erreur fatale quand aucune console ne peut la montrer (lancement par double-clic).
+/// Shows a fatal error when no console can (started by double-click).
 #[cfg(windows)]
 pub fn error_dialog(text: &str) {
     const MB_ICONERROR: u32 = 0x10;

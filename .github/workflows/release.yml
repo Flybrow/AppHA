@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-24.04-arm, name: linux-aarch64 }   # Raspberry Pi 3/4/5 (OS 64 bits)
+          - { os: ubuntu-24.04-arm, name: linux-aarch64 }   # Raspberry Pi 3/4/5 (64-bit OS)
           - { os: ubuntu-24.04, name: linux-x86_64 }
           - { os: windows-latest, name: windows-x86_64 }
     runs-on: ${{ matrix.os }}
@@ -23,10 +23,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Dépendances WebKitGTK
+      - name: WebKitGTK dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
-      - name: Tag = version du Cargo.toml
+      - name: Tag matches Cargo.toml version
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: test "${GITHUB_REF_NAME#v}" = "$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)"
@@ -40,10 +40,10 @@ jobs:
           cp target/release/ha-kiosk config.example.toml README.md LICENSE dist/ha-kiosk/
           cp -r deploy dist/ha-kiosk/
           tar -C dist -czf ha-kiosk-${{ matrix.name }}.tar.gz ha-kiosk
-      - name: Exécutable Windows
+      - name: Windows executable
         if: runner.os == 'Windows'
         shell: pwsh
-        # Un seul fichier : la configuration se fait au premier lancement.
+        # A single file: configuration happens on first launch.
         run: Copy-Item target/release/ha-kiosk.exe ha-kiosk-${{ matrix.name }}.exe
 
       - uses: actions/upload-artifact@v4

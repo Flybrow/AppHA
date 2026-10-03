@@ -1,4 +1,4 @@
-// Pas de console en release sous Windows : économise conhost (~2 Mo) et évite la fenêtre noire.
+// No console in Windows release builds: saves conhost (~2 MB) and avoids the black window.
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 mod auth;
@@ -9,6 +9,7 @@ mod config;
 mod console;
 mod display;
 mod health;
+mod i18n;
 mod log;
 mod memory;
 mod paths;
@@ -23,9 +24,8 @@ use anyhow::Result;
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(version, about, after_help = EXAMPLES)]
+#[command(version, disable_help_subcommand = true)]
 struct Cli {
-    /// Chemin du fichier de configuration.
     #[arg(short, long, global = true)]
     config: Option<PathBuf>,
     #[command(subcommand)]
@@ -34,48 +34,30 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Lance et supervise le kiosk (par défaut hors terminal : systemd, double-clic).
     Run,
-    /// Affiche ou modifie un réglage : `config`, `config token`, `config rotation 180`.
+    Setup,
     Config {
-        /// Nom du réglage (sans nom : liste de tous les réglages).
         name: Option<String>,
-        /// Nouvelle valeur (sans valeur : question interactive).
         value: Option<String>,
     },
-    /// Interne : WebView intégrée sans supervision.
-    #[command(name = backend::WEBVIEW_SUBCOMMAND, hide = true)]
-    Webview,
-    /// Vérifie la configuration et la connexion à Home Assistant.
-    Check,
-    /// Installe la dernière release GitHub si elle est plus récente
-    /// (code de sortie 3 : déjà à jour).
-    Update,
-    /// Assistant de configuration en ligne de commande (questions / réponses).
-    Setup,
-    /// Ouvre l'écran de paramètres.
     #[command(name = backend::SETTINGS_SUBCOMMAND)]
     Settings {
-        /// Premier lancement : pas de bouton Annuler.
+        /// First launch: no Cancel button.
         #[arg(long, hide = true)]
         first_run: bool,
     },
+    Check,
+    Update,
+    /// Internal: built-in WebView without supervision.
+    #[command(name = backend::WEBVIEW_SUBCOMMAND, hide = true)]
+    Webview,
 }
-
-const EXAMPLES: &str = "Exemples :
-  ha-kiosk setup                 assistant complet (questions / réponses)
-  ha-kiosk config                liste des réglages et de leurs valeurs
-  ha-kiosk config token          modifie le jeton (question interactive)
-  ha-kiosk config rotation 180   modifie directement un réglage
-  ha-kiosk check                 teste la config et la connexion à HA
-  ha-kiosk update                installe la dernière version
-  ha-kiosk run                   lance le kiosk";
 
 fn main() {
     let console = console::attach();
     if let Err(e) = run() {
         let text = format!("{e:#}");
-        eprintln!("[ha-kiosk] ERREUR: {text}");
+        eprintln!("[ha-kiosk] {}: {text}", tr!("ERROR", "ERREUR"));
         if !console {
             console::error_dialog(&text);
         }
@@ -84,13 +66,15 @@ fn main() {
 }
 
 fn run() -> Result<()> {
-    let mut command = Cli::command().after_long_help(format!("{EXAMPLES}
-
-{}", cli::settings::help_text()));
+    let explicit_config = config_argument();
+    if let Ok(path) = config::locate(explicit_config.clone()) {
+        i18n::set(config::peek_language(&path));
+    }
+    let mut command = translated_command();
     let cli = Cli::from_arg_matches(&command.get_matches_mut()).map_err(|e| e.exit()).unwrap();
-    // `ha-kiosk` seul tapé dans un terminal : aide. Lancé par systemd, cage ou un double-clic : kiosk.
+    // `ha-kiosk` typed alone in a terminal: help. Started by systemd, cage or a double-click: kiosk.
     if cli.command.is_none() && cli.config.is_none() && launched_from_terminal() {
-        command.print_long_help()?;
+        print!("{}", cli::summary());
         return Ok(());
     }
     update::cleanup();
@@ -99,24 +83,22 @@ fn run() -> Result<()> {
         return cli::update();
     }
     let path = config::locate(cli.config)?;
-    if let Cmd::Config { name, value } = &command {
-        return cli::config_cmd::run(&path, name.as_deref(), value.as_deref());
+    match &command {
+        Cmd::Config { name, value } => return cli::config_cmd::run(&path, name.as_deref(), value.as_deref()),
+        Cmd::Setup => return cli::wizard::run(&path),
+        Cmd::Settings { first_run } => return ui::settings::run(&path, !first_run),
+        _ => {}
     }
-    if let Cmd::Setup = command {
-        return cli::wizard::run(&path);
-    }
-    if let Cmd::Settings { first_run } = command {
-        return ui::settings::run(&path, !first_run);
-    }
-    // Premier lancement : on demande la configuration avant de superviser.
+    // First launch: ask for the configuration before supervising.
     if matches!(command, Cmd::Run) && !path.is_file() {
         match backend::open_settings(&path, false)? {
             backend::SettingsOutcome::Saved | backend::SettingsOutcome::Updated => {}
             backend::SettingsOutcome::Quit => return Ok(()),
-            backend::SettingsOutcome::Cancelled => anyhow::bail!("aucune configuration enregistrée"),
+            backend::SettingsOutcome::Cancelled => anyhow::bail!(tr!("no configuration saved", "aucune configuration enregistrée")),
         }
     }
     let cfg = config::Config::load(&path)?;
+    i18n::set(cfg.language);
 
     match command {
         Cmd::Run => {
@@ -129,11 +111,46 @@ fn run() -> Result<()> {
     }
 }
 
-/// Vrai si un humain a lancé la commande dans un terminal (et non systemd, cage ou l'Explorateur).
+/// Clap definition with texts in the current language; `--help` shows the same
+/// short summary as `ha-kiosk` alone.
+fn translated_command() -> clap::Command {
+    let about = |text: &'static str| move |c: clap::Command| c.about(text);
+    Cli::command()
+        .override_help(cli::summary())
+        .mut_arg("config", |a| a.help(tr!("Config file to use", "Fichier de configuration à utiliser")))
+        .mut_subcommand("run", about(tr!("Start the kiosk", "Lance le kiosk")))
+        .mut_subcommand("setup", about(tr!("Configuration wizard", "Assistant de configuration")))
+        .mut_subcommand("config", |c| {
+            c.about(tr!("Show or change settings", "Affiche ou modifie les réglages"))
+                .after_help(cli::settings::help_text())
+                .mut_arg("name", |a| a.help(tr!("Setting name (none: list all)", "Nom du réglage (aucun : tout lister)")))
+                .mut_arg("value", |a| a.help(tr!("New value (none: asked)", "Nouvelle valeur (aucune : demandée)")))
+        })
+        .mut_subcommand(backend::SETTINGS_SUBCOMMAND, about(tr!("Open the settings screen", "Ouvre l'écran de paramètres")))
+        .mut_subcommand("check", about(tr!("Test the connection to Home Assistant", "Teste la connexion à Home Assistant")))
+        .mut_subcommand("update", about(tr!("Install the latest version", "Installe la dernière version")))
+}
+
+/// `--config` / `-c` read before full parsing, to pick the help language.
+fn config_argument() -> Option<PathBuf> {
+    let mut args = std::env::args_os().skip(1);
+    while let Some(arg) = args.next() {
+        let arg = arg.to_string_lossy().into_owned();
+        if arg == "-c" || arg == "--config" {
+            return args.next().map(PathBuf::from);
+        }
+        if let Some(value) = arg.strip_prefix("--config=") {
+            return Some(PathBuf::from(value));
+        }
+    }
+    None
+}
+
+/// True if a human typed the command in a terminal (not systemd, cage or Explorer).
 fn launched_from_terminal() -> bool {
     use std::io::IsTerminal;
     if cfg!(windows) {
-        // En release, la console n'existe que si un terminal parent l'a prêtée.
+        // In release builds, a console exists only if a parent terminal lent one.
         return console::attached() && std::io::stdout().is_terminal();
     }
     std::env::var_os("INVOCATION_ID").is_none()

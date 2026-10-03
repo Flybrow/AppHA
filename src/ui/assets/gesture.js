@@ -1,4 +1,4 @@
-// Ouvre les paramètres : 5 tapes en 3 s dans le coin haut-gauche, ou F10 / Ctrl+,
+// Opens the settings: 5 taps within 3 s in the top-left corner, or F10 / Ctrl+,
 (() => {
   if (window.__haKioskGesture) return;
   window.__haKioskGesture = true;

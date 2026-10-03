@@ -1,5 +1,5 @@
-// Injecte une feuille de style dans le document et dans chaque shadow root (le
-// frontend HA est fait de Web Components, qu'un style global n'atteint pas).
+// Injects a stylesheet into the document and every shadow root (the HA frontend
+// is made of Web Components, which a global style does not reach).
 (() => {
   if (window.__haKioskCss) return;
   window.__haKioskCss = true;

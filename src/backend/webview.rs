@@ -1,5 +1,5 @@
-//! WebView système intégrée : WebView2 (Windows) ou WebKitGTK (Linux).
-//! Exécutée dans un process enfant lancé par le superviseur.
+//! Built-in system WebView: WebView2 (Windows) or WebKitGTK (Linux).
+//! Runs in a child process started by the supervisor.
 
 use std::time::Duration;
 
@@ -11,7 +11,7 @@ use crate::config::Config;
 use crate::{auth, health};
 use crate::ui::{self, WindowSpec, js_string, render};
 
-/// Code de sortie demandant au superviseur d'ouvrir les paramètres.
+/// Exit code asking the supervisor to open the settings.
 pub const EXIT_SETTINGS: i32 = 4;
 
 const LOADING: &str = include_str!("../ui/assets/loading.html");
@@ -23,7 +23,7 @@ pub fn run(cfg: &Config) -> Result<()> {
         mode: w.mode,
         width: w.width,
         height: w.height,
-        // Profil persistant : cookies, cache et session HA survivent aux redémarrages.
+        // Persistent profile: cookies, cache and HA session survive restarts.
         profile: "webview",
         close_code: 0,
         insecure_tls: cfg.insecure_tls,
@@ -31,7 +31,7 @@ pub fn run(cfg: &Config) -> Result<()> {
         animations: w.animations,
         hide_cursor: w.hide_cursor,
     };
-    // Page de chargement locale : elle attend HA puis redirige vers le dashboard.
+    // Local loading page: waits for HA, then redirects to the dashboard.
     let html = render(
         LOADING,
         &[("BASE", &js_string(cfg.url.as_str())), ("TARGET", &js_string(cfg.dashboard_url().as_str()))],
@@ -72,8 +72,8 @@ pub fn run(cfg: &Config) -> Result<()> {
     })
 }
 
-/// Teste HA en arrière-plan puis bascule la page de chargement vers le dashboard.
-/// Appelé quand la page de chargement est prête à recevoir les appels.
+/// Tests HA in the background, then switches the loading page to the dashboard.
+/// Called once the loading page is ready to receive calls.
 fn wait_then_redirect(ui: ui::Ui, base: Url) {
     std::thread::spawn(move || {
         while !health::is_reachable(&base) {
@@ -84,8 +84,8 @@ fn wait_then_redirect(ui: ui::Ui, base: Url) {
     });
 }
 
-/// Arguments Chromium orientés RAM : un seul renderer, aucun service de fond inutile en kiosk.
-/// Remplacent ceux de wry, dont les `--disable-features` sont réinclus.
+/// RAM-oriented Chromium arguments: one renderer, no background service useless in a kiosk.
+/// They replace wry's, whose `--disable-features` are included again.
 #[cfg(windows)]
 const LEAN_ARGS: &str = "--renderer-process-limit=1 --disable-background-networking --disable-component-update --disable-extensions --disable-sync --no-first-run --js-flags=--optimize-for-size --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,AutofillServerCommunication,Translate,OptimizationHints,MediaRouter";
 
@@ -104,6 +104,6 @@ fn apply_browser_args(builder: WebViewBuilder<'_>, gpu: bool, insecure: bool) ->
 
 #[cfg(not(windows))]
 fn apply_browser_args(builder: WebViewBuilder<'_>, _gpu: bool, insecure: bool) -> WebViewBuilder<'_> {
-    let _ = insecure; // géré par la politique TLS de WebKitGTK (ui::attach)
+    let _ = insecure; // handled by the WebKitGTK TLS policy (ui::attach)
     builder
 }

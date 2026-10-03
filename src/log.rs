@@ -1,4 +1,4 @@
-//! Journalisation minimale sur stderr (capturée par journald sous systemd).
+//! Minimal logging to stderr (captured by journald under systemd).
 
 #[macro_export]
 macro_rules! info {
@@ -7,5 +7,5 @@ macro_rules! info {
 
 #[macro_export]
 macro_rules! warn {
-    ($($arg:tt)*) => { eprintln!("[ha-kiosk] ATTENTION: {}", format_args!($($arg)*)) };
+    ($($arg:tt)*) => { eprintln!("[ha-kiosk] WARNING: {}", format_args!($($arg)*)) };
 }

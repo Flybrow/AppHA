@@ -1,5 +1,5 @@
-//! Écran de paramètres : édite `config.toml` puis se ferme.
-//! Code de sortie : `SAVED` si la config a été enregistrée, `QUIT` pour arrêter le kiosk, `CANCELLED` sinon.
+//! Settings screen: edits `config.toml`, then closes.
+//! Exit code: `SAVED` when saved, `QUIT` to stop the kiosk, `UPDATED` after an update, `CANCELLED` otherwise.
 
 use std::path::Path;
 
@@ -14,7 +14,7 @@ use crate::{health, update};
 pub const SAVED: i32 = 0;
 pub const CANCELLED: i32 = 3;
 pub const QUIT: i32 = 5;
-/// Nouvelle version installée : le superviseur doit se relancer.
+/// New version installed: the supervisor must restart.
 pub const UPDATED: i32 = 6;
 
 const TEMPLATE: &str = include_str!("assets/settings.html");
@@ -23,7 +23,7 @@ const TEMPLATE: &str = include_str!("assets/settings.html");
 #[serde(tag = "action", rename_all = "snake_case")]
 enum Message {
     Test { url: String },
-    /// `quit` : enregistre puis arrête le kiosk au lieu de le (re)lancer.
+    /// `quit`: save, then stop the kiosk instead of (re)starting it.
     Save {
         config: serde_json::Value,
         #[serde(default)]
@@ -35,7 +35,7 @@ enum Message {
     UpdateInstall,
 }
 
-/// `can_cancel` : faux au premier lancement, quand aucune config valide n'existe.
+/// `can_cancel`: false on first launch, when no valid config exists.
 pub fn run(path: &Path, can_cancel: bool) -> Result<()> {
     let initial = Config::editable_json(path);
     let html = render(
@@ -48,7 +48,7 @@ pub fn run(path: &Path, can_cancel: bool) -> Result<()> {
     );
     let path = path.to_path_buf();
     let spec = WindowSpec {
-        title: "HA Kiosk — Paramètres",
+        title: crate::tr!("HA Kiosk — Settings", "HA Kiosk — Paramètres"),
         mode: WindowMode::Windowed,
         width: 720,
         height: 820,
@@ -70,7 +70,7 @@ fn handle(ui: &Ui, path: &Path, body: &str) {
     match msg {
         Message::Test { url } => {
             let ui = ui.clone();
-            // Test réseau hors de la boucle d'événements pour ne pas figer la fenêtre.
+            // Network test outside the event loop so the window does not freeze.
             std::thread::spawn(move || {
                 let ok = Url::parse(&url).is_ok_and(|u| health::is_reachable(&u));
                 ui.eval(format!("onTestResult({ok})"));
@@ -87,7 +87,7 @@ fn handle(ui: &Ui, path: &Path, body: &str) {
     }
 }
 
-/// Recherche (et installe si `install`) la dernière version, hors de la boucle d'événements.
+/// Checks for (and installs if `install`) the latest version, outside the event loop.
 fn update_in_background(ui: &Ui, install: bool) {
     let ui = ui.clone();
     std::thread::spawn(move || {
@@ -100,7 +100,7 @@ fn update_in_background(ui: &Ui, install: bool) {
             Ok(Some(r)) => ui.eval(format!("onUpdate('available', {})", js_string(&r.tag))),
             Ok(None) => ui.eval("onUpdate('none')"),
             Err(e) => {
-                let hint = if cfg!(unix) { " — essayez : sudo ha-kiosk update" } else { "" };
+                let hint = if cfg!(unix) { crate::tr!(" — try: sudo ha-kiosk update", " — essayez : sudo ha-kiosk update") } else { "" };
                 ui.eval(format!("onUpdate('error', {})", js_string(&format!("{e:#}{hint}"))));
             }
         }

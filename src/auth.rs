@@ -1,14 +1,14 @@
-//! Connexion automatique au frontend HA avec un jeton longue durée.
+//! Automatic login to the HA frontend with a long-lived access token.
 //!
-//! Le frontend lit ses identifiants dans `localStorage["hassTokens"]`. On y place
-//! le jeton avec une expiration lointaine : aucun écran de connexion, aucun refresh.
+//! The frontend reads its credentials from `localStorage["hassTokens"]`. The token
+//! is stored there with a far expiry: no login screen, no refresh.
 
 use std::path::Path;
 
 use anyhow::{Context, Result};
 use url::Url;
 
-/// Script exécuté avant chaque chargement de page (uniquement sur l'origine HA).
+/// Script run before each page load (on the HA origin only).
 pub fn init_script(ha_url: &Url, token: &str) -> Option<String> {
     if token.is_empty() {
         return None;
@@ -30,20 +30,20 @@ pub fn init_script(ha_url: &Url, token: &str) -> Option<String> {
     ))
 }
 
-/// Navigateurs externes de la famille Chromium : le jeton y est injecté par une extension.
+/// Chromium-family external browsers: the token is injected by an extension.
 const CHROMIUM: &[&str] = &["chromium", "chromium-browser", "chrome", "google-chrome", "google-chrome-stable", "msedge", "brave", "brave-browser"];
 
-/// Vrai si le navigateur externe `program` peut recevoir le jeton.
+/// True if the external browser `program` can receive the token.
 pub fn external_supports_token(program: &str) -> bool {
     Path::new(program).file_stem().and_then(|s| s.to_str()).is_some_and(|s| CHROMIUM.contains(&s))
 }
 
-/// Écrit une extension Chromium (script au démarrage de chaque page, filtré sur
-/// l'origine HA) et renvoie les arguments qui la chargent.
+/// Writes a Chromium extension (script at the start of each page, filtered on the
+/// HA origin) and returns the arguments that load it.
 pub fn chromium_extension_args(ha_url: &Url, token: &str) -> Result<Vec<String>> {
     let Some(script) = init_script(ha_url, token) else { return Ok(Vec::new()) };
-    let dir = crate::paths::data_dir().context("dossier de données introuvable")?.join("chromium-auth");
-    std::fs::create_dir_all(&dir).with_context(|| format!("création de {}", dir.display()))?;
+    let dir = crate::paths::data_dir().context("data directory not found")?.join("chromium-auth");
+    std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
     let manifest = serde_json::json!({
         "manifest_version": 3,
         "name": "ha-kiosk auth",
@@ -55,13 +55,13 @@ pub fn chromium_extension_args(ha_url: &Url, token: &str) -> Result<Vec<String>>
     std::fs::write(&script_path, script)?;
     #[cfg(unix)]
     {
-        // Contient le jeton.
+        // Holds the token.
         use std::os::unix::fs::PermissionsExt;
         std::fs::set_permissions(&script_path, std::fs::Permissions::from_mode(0o600))?;
     }
     Ok(vec![
         format!("--load-extension={}", dir.display()),
-        // Chrome 137+ ignore --load-extension sans ce réglage.
+        // Chrome 137+ ignores --load-extension without this.
         "--disable-features=DisableLoadExtensionCommandLineSwitch".into(),
     ])
 }

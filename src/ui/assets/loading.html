@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>HA Kiosk</title>
@@ -19,16 +19,20 @@
 <body>
   <main>
     <div class="spinner"></div>
-    <h1 id="status">Connexion à Home Assistant…</h1>
+    <h1 id="status"></h1>
     <p class="muted" id="target"></p>
-    <button onclick="window.ipc.postMessage('settings')">Paramètres</button>
+    <button id="settings" onclick="window.ipc.postMessage('settings')"></button>
   </main>
 <script>
-  // Joignabilité testée côté Rust, qui appelle ces fonctions.
-  const BASE = /*BASE*/, TARGET = /*TARGET*/;
-  document.getElementById("target").textContent = BASE;
-  window.onUnreachable = () =>
-    (document.getElementById("status").textContent = "Home Assistant injoignable, nouvel essai…");
+  // Reachability is tested by Rust, which calls these functions.
+  const BASE = /*BASE*/, TARGET = /*TARGET*/, LANG = /*LANG*/;
+  const t = (en, fr) => (LANG === "fr" ? fr : en);
+  const $ = (id) => document.getElementById(id);
+  document.documentElement.lang = LANG;
+  $("status").textContent = t("Connecting to Home Assistant…", "Connexion à Home Assistant…");
+  $("settings").textContent = t("Settings", "Paramètres");
+  $("target").textContent = BASE;
+  window.onUnreachable = () => ($("status").textContent = t("Home Assistant unreachable, retrying…", "Home Assistant injoignable, nouvel essai…"));
   window.onReachable = () => location.replace(TARGET);
   window.ipc.postMessage("ready");
 </script>

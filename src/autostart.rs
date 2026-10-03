@@ -1,10 +1,10 @@
-//! Démarrage automatique avec la machine (`autostart`).
-//! Windows : clé `Run` de l'utilisateur (sans droits administrateur).
-//! Linux : service systemd `ha-kiosk` (activation réservée à root).
+//! Starting with the machine (`autostart`).
+//! Windows: the user's `Run` registry key (no administrator rights).
+//! Linux: the `ha-kiosk` systemd service (enabling requires root).
 
 use anyhow::Result;
 
-/// Met le système en accord avec `enabled`.
+/// Brings the system in line with `enabled`.
 pub fn apply(enabled: bool) -> Result<()> {
     imp::apply(enabled)
 }
@@ -22,12 +22,12 @@ mod imp {
 
     pub fn apply(enabled: bool) -> Result<()> {
         if enabled {
-            let exe = std::env::current_exe().context("chemin de l'exécutable")?;
+            let exe = std::env::current_exe().context("executable path")?;
             let command = format!("\"{}\" run", exe.display());
             run_quiet(Command::new("reg").args(["add", KEY, "/v", NAME, "/t", "REG_SZ", "/d", &command, "/f"]))
-                .context("inscription au démarrage de Windows")?;
+                .context("registering at Windows startup")?;
         } else if is_registered() {
-            run_quiet(Command::new("reg").args(["delete", KEY, "/v", NAME, "/f"])).context("retrait du démarrage de Windows")?;
+            run_quiet(Command::new("reg").args(["delete", KEY, "/v", NAME, "/f"])).context("removing from Windows startup")?;
         }
         Ok(())
     }
@@ -48,7 +48,7 @@ mod imp {
     const UNIT: &str = "ha-kiosk.service";
 
     pub fn apply(enabled: bool) -> Result<()> {
-        // `is-enabled` répond sans root ; rien à faire si déjà conforme ou sans service installé.
+        // `is-enabled` works without root; nothing to do if already right or no service installed.
         let state = run_quiet(Command::new("systemctl").args(["is-enabled", UNIT]))
             .map(|out| String::from_utf8_lossy(&out).trim().to_string())
             .unwrap_or_else(|_| "disabled".into());
@@ -57,8 +57,11 @@ mod imp {
         }
         let action = if enabled { "enable" } else { "disable" };
         if run_quiet(Command::new("systemctl").args([action, UNIT])).is_err() {
-            let value = if enabled { "oui" } else { "non" };
-            bail!("droits administrateur nécessaires : sudo ha-kiosk config autostart {value}");
+            let value = if enabled { "yes" } else { "no" };
+            bail!(
+                "{} sudo ha-kiosk config autostart {value}",
+                crate::tr!("administrator rights required:", "droits administrateur nécessaires :")
+            );
         }
         Ok(())
     }

@@ -1,5 +1,5 @@
-//! Boucle de supervision : attend HA, lance le navigateur, le relance si
-//! il plante, dépasse son budget RAM, vieillit trop ou si HA revient après une coupure.
+//! Supervision loop: waits for HA, starts the browser, restarts it when it
+//! crashes, exceeds its RAM budget, gets too old, or when HA comes back after an outage.
 
 use std::path::Path;
 use std::process::Child;
@@ -15,29 +15,29 @@ use crate::{backend, health, info, update, warn};
 
 const MIN_BACKOFF: Duration = Duration::from_secs(2);
 const MAX_BACKOFF: Duration = Duration::from_secs(60);
-/// Fréquence de détection de la fin du navigateur.
+/// How often the browser's exit is checked.
 const EXIT_POLL: Duration = Duration::from_millis(250);
-/// En dessous de cette durée de vie, un arrêt est considéré comme un crash au démarrage.
+/// Below this lifetime, a stop counts as a startup crash.
 const STABLE_AFTER: Duration = Duration::from_secs(30);
 
-/// Raison de l'arrêt d'une session navigateur.
+/// Why a browser session stopped.
 enum Stop {
     Exited,
-    /// L'utilisateur a demandé les paramètres depuis la WebView.
+    /// The user asked for the settings from the WebView.
     Settings,
     Scheduled,
     Memory(u64),
     Reconnected,
-    /// Une nouvelle version vient d'être installée.
+    /// A new version has just been installed.
     Updated,
 }
 
-/// Intervalle entre deux recherches de mise à jour.
+/// Interval between two update checks.
 const UPDATE_EVERY: Duration = Duration::from_secs(6 * 3600);
 
-/// Recherche et installation des mises à jour en arrière-plan, pour ne jamais
-/// bloquer la surveillance. Seulement si l'exécutable est modifiable par
-/// l'utilisateur courant (installation Linux : /opt/ha-kiosk appartient au kiosk).
+/// Checks and installs updates in the background, never blocking supervision.
+/// Only when the executable is writable by the current user (Linux install:
+/// /opt/ha-kiosk belongs to the kiosk user).
 struct Updater {
     next: Instant,
     pending: Option<Receiver<bool>>,
@@ -48,7 +48,7 @@ impl Updater {
         (enabled && update::can_self_update()).then(|| Self { next: Instant::now(), pending: None })
     }
 
-    /// Vrai quand une nouvelle version est installée et prête à être relancée.
+    /// True once a new version is installed and ready to be restarted.
     fn poll(&mut self) -> bool {
         if let Some(rx) = &self.pending {
             match rx.try_recv() {
@@ -66,12 +66,12 @@ impl Updater {
             std::thread::spawn(move || {
                 let installed = match update::check() {
                     Ok(Some(release)) => {
-                        info!("nouvelle version {}, installation", release.tag);
-                        update::install(&release).map_err(|e| warn!("mise à jour : {e:#}")).is_ok()
+                        info!("new version {}, installing", release.tag);
+                        update::install(&release).map_err(|e| warn!("update: {e:#}")).is_ok()
                     }
                     Ok(None) => false,
                     Err(e) => {
-                        warn!("recherche de mise à jour : {e:#}");
+                        warn!("update check: {e:#}");
                         false
                     }
                 };
@@ -88,23 +88,23 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
     let mut probe = MemoryProbe::new();
     let mut updater = Updater::new(cfg.auto_update);
     crate::display::apply_rotation(&cfg);
-    // Windows : resynchronise l'inscription au démarrage (chemin de l'exe à jour).
+    // Windows: re-sync the startup registration (current exe path).
     if cfg!(windows)
         && let Err(e) = crate::autostart::apply(cfg.autostart)
     {
         warn!("{e:#}");
     }
-    info!("dashboard : {} (navigateur : {:?})", cfg.dashboard_url(), cfg.resolved_browser());
+    info!("dashboard: {} (browser: {:?})", cfg.dashboard_url(), cfg.resolved_browser());
 
     loop {
-        // La WebView affiche sa propre page d'attente (avec accès aux paramètres).
+        // The WebView shows its own waiting page (with access to the settings).
         if cfg.resolved_browser() != Browser::Webview {
             wait_until_reachable(&cfg);
         }
         let started = Instant::now();
         let mut child = match backend::spawn(&cfg, config_path) {
             Ok(c) => {
-                info!("navigateur lancé (pid {})", c.id());
+                info!("browser started (pid {})", c.id());
                 c
             }
             Err(e) => {
@@ -119,33 +119,34 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
         let _ = child.wait();
         match reason {
             Stop::Exited => {
-                // Sous cage, l'arrêt du compositeur tue le navigateur : on s'arrête aussi,
-                // sinon cage (qui attend son enfant) ne se termine jamais.
+                // Under cage, stopping the compositor kills the browser: stop too,
+                // otherwise cage (which waits for its child) never ends.
                 if !crate::display::compositor_alive() {
-                    info!("compositeur arrêté, fin du kiosk");
+                    info!("compositor stopped, exiting");
                     return Ok(());
                 }
-                info!("le navigateur s'est arrêté")
+                info!("browser stopped")
             }
             Stop::Settings => {
-                info!("ouverture des paramètres");
-                // Un échec ici ne doit pas arrêter le kiosk : on reprend l'affichage.
+                info!("opening the settings");
+                // A failure here must not stop the kiosk: resume the display.
                 let outcome = backend::open_settings(config_path, true).unwrap_or_else(|e| {
-                    warn!("paramètres : {e:#}");
+                    warn!("settings: {e:#}");
                     backend::SettingsOutcome::Cancelled
                 });
                 if outcome == backend::SettingsOutcome::Updated {
                     return restart_self();
                 }
                 if outcome == backend::SettingsOutcome::Quit {
-                    info!("arrêt demandé depuis les paramètres");
+                    info!("exit requested from the settings");
                     return Ok(());
                 }
                 if outcome == backend::SettingsOutcome::Saved {
                     match Config::load(config_path) {
                         Ok(new) => {
-                            info!("configuration rechargée");
+                            info!("configuration reloaded");
                             cfg = new;
+                            crate::i18n::set(cfg.language);
                             crate::display::apply_rotation(&cfg);
                         }
                         Err(e) => warn!("{e:#}"),
@@ -154,9 +155,9 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
                 backoff = MIN_BACKOFF;
                 continue;
             }
-            Stop::Scheduled => info!("redémarrage préventif planifié"),
-            Stop::Memory(mb) => warn!("RAM du navigateur trop élevée ({mb} Mo), redémarrage"),
-            Stop::Reconnected => info!("Home Assistant de nouveau joignable, rechargement"),
+            Stop::Scheduled => info!("scheduled preventive restart"),
+            Stop::Memory(mb) => warn!("browser RAM too high ({mb} MB), restarting"),
+            Stop::Reconnected => info!("Home Assistant reachable again, reloading"),
             Stop::Updated => return restart_self(),
         }
 
@@ -194,17 +195,17 @@ fn watch(cfg: &Config, child: &mut Child, probe: &mut MemoryProbe, started: Inst
         } else {
             failures = failures.saturating_add(1);
             if failures == s.failures_before_down {
-                warn!("Home Assistant injoignable");
+                warn!("Home Assistant unreachable");
             }
         }
     }
 }
 
-/// Relance le nouvel exécutable avec les mêmes arguments, puis s'arrête.
-/// Sous Unix, remplace le process sur place (même PID) : cage, dont le superviseur
-/// est l'enfant direct, ne voit pas de sortie et garde l'écran.
+/// Restarts the new executable with the same arguments, then exits.
+/// On Unix, replaces the process in place (same PID): cage, whose direct child is
+/// the supervisor, sees no exit and keeps the screen.
 fn restart_self() -> Result<()> {
-    info!("redémarrage sur la nouvelle version");
+    info!("restarting on the new version");
     let exe = std::env::current_exe()?;
     let mut cmd = std::process::Command::new(exe);
     cmd.args(std::env::args_os().skip(1));
@@ -220,7 +221,7 @@ fn restart_self() -> Result<()> {
     }
 }
 
-/// Surveille la fin du process pendant `duration` (réaction rapide, ex. ouverture des paramètres).
+/// Watches for the process exit during `duration` (fast reaction, e.g. opening the settings).
 fn wait_exit(child: &mut Child, duration: Duration) -> Option<Stop> {
     let deadline = Instant::now() + duration;
     loop {
@@ -241,14 +242,14 @@ fn wait_until_reachable(cfg: &Config) {
     let mut warned = false;
     while !health::is_reachable(&cfg.url) {
         if !warned {
-            warn!("en attente de Home Assistant ({})...", cfg.url);
+            warn!("waiting for Home Assistant ({})...", cfg.url);
             warned = true;
         }
         sleep(MIN_BACKOFF);
     }
 }
 
-/// Patiente puis renvoie le délai suivant (doublé, plafonné).
+/// Waits, then returns the next delay (doubled, capped).
 fn wait_backoff(current: Duration) -> Duration {
     sleep(current);
     (current * 2).min(MAX_BACKOFF)

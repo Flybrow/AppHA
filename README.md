@@ -1,167 +1,53 @@
-# AppHA — kiosk Home Assistant
+# HA Kiosk
 
-Affiche votre dashboard Home Assistant en plein écran, en continu, sur un Raspberry Pi, un PC Windows ou Linux. Il reste léger et se rétablit tout seul.
+**English** | [Français](README.fr.md)
 
-- **Connexion automatique** avec un jeton longue durée : aucun écran de connexion.
-- **Toujours affiché** : relance après un crash, après une coupure de Home Assistant ou du réseau, et redémarrage préventif planifié.
-- **Léger** : animations désactivées par défaut sous Linux, fluide même sur un Raspberry Pi 3. Le kiosk lui-même consomme quelques Mo.
-- **Mises à jour automatiques** depuis GitHub (vérification toutes les 6 h), sans intervention.
-- Compatible HTTP, HTTPS (certificat auto-signé compris), IP locale, nom de domaine et Nabu Casa.
+Shows your Home Assistant dashboard full screen on a Raspberry Pi or a Windows PC. Logs in by itself, recovers from crashes and outages, updates itself.
 
----
+## Before you start
 
-## Avant de commencer : créer un jeton
+In Home Assistant: **your profile → Security → Long-lived access tokens → Create token**. Copy it.
 
-Dans Home Assistant, ouvrez **votre profil** (en bas à gauche), puis l'onglet **Sécurité**, puis **Jetons d'accès longue durée** et **Créer un jeton**. Copiez-le : il ne sera plus affiché ensuite.
-
----
-
-## Installation
-
-Cliquez sur votre système pour afficher les instructions.
+## Install
 
 <details>
-<summary><b>🍓 Raspberry Pi</b></summary>
-
-Fonctionne sur Pi 3, 4 et 5, avec **Raspberry Pi OS 64 bits** (la version Lite suffit). Pour vérifier : `dpkg --print-architecture` doit afficher `arm64`.
-
-#### Installation
-
-Dans un terminal sur le Pi, ou en SSH :
+<summary><b>Raspberry Pi</b> (Pi 3/4/5, Raspberry Pi OS 64-bit)</summary>
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Flybrow/AppHA/main/deploy/linux/get.sh | sudo sh -s -- $USER
-```
-
-L'installation dure de 5 à 20 minutes sur un Pi 3. Un **assistant** pose ensuite les questions une par une (rotation de l'écran, adresse de Home Assistant, jeton…). Il suffit d'appuyer sur Entrée pour garder la valeur proposée.
-
-Ensuite :
-
-```sh
-sudo raspi-config nonint do_boot_behaviour B1   # démarrage sans bureau (libère de la RAM)
+sudo raspi-config nonint do_boot_behaviour B1   # boot without the desktop
 sudo reboot
 ```
 
-Le Pi démarre alors directement sur le dashboard.
-
-> Écran tactile ? `sudo ha-kiosk config hide_cursor oui` masque le curseur.
->
-> L'écran est à l'envers ? Lancez `sudo ha-kiosk config rotation 180`, puis `sudo systemctl restart ha-kiosk`. L'écran officiel 7" monté dans certains boîtiers a besoin de 180.
-
-#### Changer un réglage
-
-```sh
-sudo ha-kiosk config                  # affiche tous les réglages
-sudo ha-kiosk config token            # change le jeton (question posée)
-sudo ha-kiosk config rotation 180     # change directement une valeur
-sudo ha-kiosk setup                   # refait l'assistant complet
-sudo systemctl restart ha-kiosk       # applique les changements
-```
-
-Tapez `ha-kiosk` seul pour afficher l'aide complète.
-
-Avec un clavier ou un écran tactile, l'**écran de paramètres** s'ouvre aussi directement sur le kiosk : **5 tapes rapides dans le coin haut-gauche**, ou **F10**.
-
-#### Commandes utiles
-
-| Besoin | Commande |
-|---|---|
-| Redémarrer le kiosk | `sudo systemctl restart ha-kiosk` |
-| Arrêter le kiosk | `sudo systemctl stop ha-kiosk` |
-| Ne plus lancer le kiosk au démarrage | `sudo ha-kiosk config autostart non` |
-| Mettre à jour maintenant | `ha-kiosk update`, ou bouton dans les paramètres |
-| Voir les journaux | `journalctl -t ha-kiosk -f` |
-| Tester la connexion à HA | `sudo ha-kiosk check` |
-
-#### Revenir au bureau
-
-```sh
-sudo systemctl disable --now ha-kiosk
-sudo systemctl enable getty@tty1
-sudo raspi-config nonint do_boot_behaviour B4
-sudo reboot
-```
+A wizard asks for your Home Assistant address and token during the install.
 
 </details>
 
 <details>
-<summary><b>🪟 Windows</b></summary>
+<summary><b>Windows</b> (10/11)</summary>
 
-Windows 10 ou 11 (64 bits).
+1. Download `ha-kiosk-windows-x86_64.exe` from the [latest release](https://github.com/Flybrow/AppHA/releases/latest).
+2. Put it in a folder of your own (e.g. `C:\HA-Kiosk`) and run it.
+3. Enter your Home Assistant address and token, then **Save and start**.
 
-1. Téléchargez **`ha-kiosk-windows-x86_64.exe`** depuis la [dernière version](https://github.com/Flybrow/AppHA/releases/latest).
-2. Placez-le dans un dossier à vous, par exemple `C:\AppHA` : il s'y mettra à jour tout seul.
-3. Double-cliquez dessus. Si Windows affiche « Windows a protégé votre ordinateur », cliquez sur **Informations complémentaires**, puis **Exécuter quand même**.
-4. L'**écran de paramètres** s'ouvre : saisissez l'adresse de Home Assistant et le jeton, puis cliquez sur **Enregistrer et lancer**.
-
-**Pendant l'utilisation :**
-- **Paramètres** : F10, Ctrl+, ou 5 tapes rapides dans le coin haut-gauche.
-- **Quitter** : depuis les paramètres, bouton **Quitter le kiosk**.
-- **Mode d'affichage** : plein écran, fenêtré ou fenêtré sans bordure, au choix dans les paramètres.
-
-**Lancement au démarrage de Windows :** activé par défaut. Pour le désactiver, décochez **Lancer au démarrage de la machine** dans les paramètres.
-
-Les mises à jour s'installent toutes seules. Vous pouvez aussi lancer la recherche à la main dans les paramètres (**Rechercher une mise à jour**).
+If Windows SmartScreen warns you: **More info → Run anyway**.
 
 </details>
 
-<details>
-<summary><b>🐧 Linux avec bureau (PC, Pi avec bureau)</b></summary>
+## Use
 
-Téléchargez l'archive correspondant à votre machine depuis la [dernière version](https://github.com/Flybrow/AppHA/releases/latest) : `linux-aarch64` pour un Raspberry Pi, `linux-x86_64` pour un PC. Ensuite :
+- **Settings**: tap the top-left corner 5 times, or press **F10**.
+- **Command line**: type `ha-kiosk` to see the commands, e.g. `ha-kiosk config rotation 180`.
+- **Logs** (Linux): `journalctl -t ha-kiosk -f`
 
-```sh
-sudo apt install libwebkit2gtk-4.1-0
-tar xzf ha-kiosk-linux-*.tar.gz
-./ha-kiosk/ha-kiosk run
-```
+The interface follows the system language (English or French). To force it: `ha-kiosk config language en`.
 
-Au premier lancement, l'écran de paramètres s'ouvre, comme sous Windows. Pour un kiosk dédié, préférez l'installation Raspberry Pi ci-dessus : elle fonctionne aussi sur un PC Linux.
+## Troubleshooting
 
-</details>
-
----
-
-## Réglages
-
-Ils sont disponibles dans l'écran de paramètres, dans l'assistant (`ha-kiosk setup`) ou avec `ha-kiosk config <réglage> <valeur>`.
-
-| Réglage | Rôle |
-|---|---|
-| `url` | Adresse de Home Assistant, par ex. `https://192.168.1.10:8123` |
-| `dashboard` | Dashboard à afficher, par ex. `lovelace-kiosk/0` (vide = dashboard par défaut) |
-| `token` | Jeton d'accès longue durée |
-| `insecure_tls` | Accepter un certificat HTTPS auto-signé |
-| `mode` | `fullscreen`, `windowed` ou `borderless` |
-| `rotation` | `0`, `90`, `180` ou `270` (Linux) |
-| `animations` | `non` = bien plus fluide sur les petites machines (défaut sous Linux) |
-| `hide_cursor` | Masque le curseur de la souris (écran tactile) |
-| `gpu` | Accélération matérielle : environ 70 Mo de RAM en plus, inutile sur Pi 3 |
-| `restart_every_hours` | Redémarrage préventif (`0` = jamais) |
-| `max_memory_mb` | Redémarre le navigateur au-delà de cette RAM (`0` = pas de limite) |
-| `autostart` | Lancement au démarrage de la machine (Linux : modifiable avec `sudo`) |
-| `auto_update` | Mise à jour automatique |
-| `browser` | `auto` (recommandé), `webview` ou `external` (Chromium, cog…) |
+- **Slow on a Raspberry Pi**: keep `animations` off (default). Above 60 °C a Pi 3 slows down: add a heatsink.
+- **Upside-down screen**: `ha-kiosk config rotation 180`, then `sudo systemctl restart ha-kiosk`.
+- **"Permission denied" when saving (Linux)**: run the install command again; your settings are kept.
 
 ---
 
-## Questions fréquentes
-
-**Écran noir avec seulement le curseur (Linux)**
-Relancez la commande d'installation (`curl …`) : elle met à jour le programme **et** le service, qui contient la correction. `sudo ha-kiosk update` ne met à jour que le programme.
-
-**L'affichage est lent sur Raspberry Pi**
-Vérifiez que `animations` vaut `non`. Un Pi 3 bride sa fréquence au-delà de 60 °C : un dissipateur ou un petit ventilateur aide. Une alimentation trop faible (sous-tension) le ralentit aussi : `vcgencmd get_throttled` doit afficher `0x0`.
-
-**« Permission denied » en enregistrant les paramètres ou en installant une mise à jour**
-L'installation date d'avant la version 0.8 : relancez la commande d'installation (`curl …`). La configuration est conservée.
-
-**Les journaux sont vides avec `journalctl -u ha-kiosk`**
-Utilisez `journalctl -t ha-kiosk -f` (installation 0.8 et suivantes) ou `journalctl -b | grep ha-kiosk`.
-
-**Je ne suis pas connecté automatiquement**
-Le jeton n'est utilisé qu'avec `browser = auto` ou `webview`, et avec Chromium. `cog` et Firefox ne permettent pas la connexion automatique.
-
----
-
-Développement : voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Licence MIT.
+[Architecture](docs/ARCHITECTURE.md) · MIT License
