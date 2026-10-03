@@ -57,6 +57,12 @@ fn replace_current_exe(new: &Path) -> Result<()> {
         let old = old_path(&exe);
         let _ = std::fs::remove_file(&old);
         std::fs::rename(&exe, &old).context("mise de côté de l'ancien exécutable")?;
+        if let Err(e) = std::fs::rename(&staged, &exe) {
+            // Sans cela, il ne resterait plus aucun exécutable.
+            let _ = std::fs::rename(&old, &exe);
+            return Err(e).context("installation du nouvel exécutable");
+        }
+        return Ok(());
     }
     std::fs::rename(&staged, &exe).context("installation du nouvel exécutable")
 }
@@ -116,4 +122,18 @@ fn run(cmd: &mut Command) -> Result<Vec<u8>> {
         bail!("{:?} a échoué : {}", cmd.get_program(), String::from_utf8_lossy(&out.stderr).trim());
     }
     Ok(out.stdout)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_version;
+
+    #[test]
+    fn versions() {
+        assert_eq!(parse_version("v1.2.3"), (1, 2, 3));
+        assert_eq!(parse_version("0.10.0"), (0, 10, 0));
+        assert!(parse_version("v0.10.0") > parse_version("0.9.9"));
+        assert_eq!(parse_version("v2"), (2, 0, 0));
+        assert_eq!(parse_version("garbage"), (0, 0, 0));
+    }
 }

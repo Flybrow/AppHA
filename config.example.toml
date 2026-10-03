@@ -26,7 +26,7 @@ command = ["cog", "{url}"]
 # Accepter un certificat HTTPS auto-signé (WebView2, WebKitGTK, cog).
 insecure_tls = false
 
-# Mise à jour automatique depuis les releases GitHub.
+# Mise à jour automatique depuis les releases GitHub (vérification toutes les 6 h).
 auto_update = true
 
 [window]

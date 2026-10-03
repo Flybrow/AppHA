@@ -51,10 +51,39 @@ pub fn chromium_extension_args(ha_url: &Url, token: &str) -> Result<Vec<String>>
         "content_scripts": [{ "matches": ["<all_urls>"], "js": ["auth.js"], "run_at": "document_start" }],
     });
     std::fs::write(dir.join("manifest.json"), manifest.to_string())?;
-    std::fs::write(dir.join("auth.js"), script)?;
+    let script_path = dir.join("auth.js");
+    std::fs::write(&script_path, script)?;
+    #[cfg(unix)]
+    {
+        // Contient le jeton.
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&script_path, std::fs::Permissions::from_mode(0o600))?;
+    }
     Ok(vec![
         format!("--load-extension={}", dir.display()),
         // Chrome 137+ ignore --load-extension sans ce réglage.
         "--disable-features=DisableLoadExtensionCommandLineSwitch".into(),
     ])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn script_only_for_ha_origin_and_with_token() {
+        let url = Url::parse("https://192.168.1.10:8123/").unwrap();
+        assert!(init_script(&url, "").is_none());
+        let script = init_script(&url, "abc").unwrap();
+        assert!(script.contains("\"https://192.168.1.10:8123\""));
+        assert!(script.contains("abc"));
+    }
+
+    #[test]
+    fn chromium_detection() {
+        assert!(external_supports_token("/usr/bin/chromium"));
+        assert!(external_supports_token("msedge.exe"));
+        assert!(!external_supports_token("cog"));
+        assert!(!external_supports_token("firefox"));
+    }
 }

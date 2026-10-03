@@ -9,6 +9,9 @@ PAMName=login
 TTYPath=/dev/tty1
 StandardInput=tty
 StandardError=journal
+# PAMName= place les process dans la session : `journalctl -u` ne les voit pas.
+# Logs : journalctl -t ha-kiosk -f
+SyslogIdentifier=ha-kiosk
 Environment=XDG_RUNTIME_DIR=/run/user/%KIOSK_UID%
 # Le bac à sable bubblewrap de WebKit échoue sous ce service (« Unexpected capabilities ») :
 # écran noir. Le kiosk n'affiche que Home Assistant, on le désactive.

@@ -3,8 +3,8 @@
 
 mod auth;
 mod backend;
+mod cli;
 mod config;
-mod config_cmd;
 mod console;
 mod display;
 mod health;
@@ -14,7 +14,6 @@ mod paths;
 mod supervisor;
 mod ui;
 mod update;
-mod wizard;
 
 use std::path::PathBuf;
 
@@ -85,7 +84,7 @@ fn main() {
 fn run() -> Result<()> {
     let mut command = Cli::command().after_long_help(format!("{EXAMPLES}
 
-{}", config_cmd::help_text()));
+{}", cli::settings::help_text()));
     let cli = Cli::from_arg_matches(&command.get_matches_mut()).map_err(|e| e.exit()).unwrap();
     // `ha-kiosk` seul tapé dans un terminal : aide. Lancé par systemd, cage ou un double-clic : kiosk.
     if cli.command.is_none() && cli.config.is_none() && launched_from_terminal() {
@@ -95,14 +94,14 @@ fn run() -> Result<()> {
     update::cleanup();
     let command = cli.command.unwrap_or(Cmd::Run);
     if let Cmd::Update = command {
-        return manual_update();
+        return cli::update();
     }
     let path = config::locate(cli.config)?;
     if let Cmd::Config { name, value } = &command {
-        return config_cmd::run(&path, name.as_deref(), value.as_deref());
+        return cli::config_cmd::run(&path, name.as_deref(), value.as_deref());
     }
     if let Cmd::Setup = command {
-        return wizard::run(&path);
+        return cli::wizard::run(&path);
     }
     if let Cmd::Settings { first_run } = command {
         return ui::settings::run(&path, !first_run);
@@ -123,29 +122,9 @@ fn run() -> Result<()> {
             supervisor::run(cfg, &path)
         }
         Cmd::Webview => backend::webview::run(&cfg),
-        Cmd::Check => check(&cfg, &path),
+        Cmd::Check => cli::check(&cfg, &path),
         Cmd::Settings { .. } | Cmd::Update | Cmd::Setup | Cmd::Config { .. } => unreachable!(),
     }
-}
-
-fn manual_update() -> Result<()> {
-    let Some(release) = update::check()? else {
-        println!("déjà à jour ({})", env!("CARGO_PKG_VERSION"));
-        std::process::exit(3);
-    };
-    update::install(&release)?;
-    println!("mis à jour : {} → {}", env!("CARGO_PKG_VERSION"), release.tag);
-    Ok(())
-}
-
-fn check(cfg: &config::Config, path: &std::path::Path) -> Result<()> {
-    println!("config      : {}", path.display());
-    println!("dashboard   : {}", cfg.dashboard_url());
-    println!("navigateur  : {:?}", cfg.resolved_browser());
-    println!("jeton       : {}", if cfg.token.is_empty() { "non (connexion manuelle)" } else { "oui" });
-    let ok = health::is_reachable(&cfg.url);
-    println!("joignable   : {}", if ok { "oui" } else { "NON" });
-    if ok { Ok(()) } else { anyhow::bail!("Home Assistant injoignable") }
 }
 
 /// Vrai si un humain a lancé la commande dans un terminal (et non systemd, cage ou l'Explorateur).

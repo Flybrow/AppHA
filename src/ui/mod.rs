@@ -142,7 +142,13 @@ pub fn render(template: &str, vars: &[(&str, &str)]) -> String {
 
 /// Chaîne JSON utilisable telle quelle dans du JavaScript.
 pub fn js_string(s: &str) -> String {
-    serde_json::to_string(s).unwrap_or_else(|_| "\"\"".into())
+    js_value(&serde_json::Value::from(s))
+}
+
+/// Valeur JSON insérable dans un `<script>` : `</` est échappé pour qu'une valeur
+/// contenant `</script>` ne puisse pas fermer la balise.
+pub fn js_value(value: &serde_json::Value) -> String {
+    value.to_string().replace("</", r"<\/")
 }
 
 #[cfg(target_os = "linux")]
@@ -167,4 +173,20 @@ fn attach(builder: WebViewBuilder<'_>, window: &Window, insecure_tls: bool, gpu:
 #[cfg(not(target_os = "linux"))]
 fn attach(builder: WebViewBuilder<'_>, window: &Window, _insecure_tls: bool, _gpu: bool) -> wry::Result<WebView> {
     builder.build(window)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn script_values_cannot_close_the_tag() {
+        assert_eq!(js_string("a</script>b"), r#""a<\/script>b""#);
+    }
+
+    #[test]
+    fn render_replaces_placeholders() {
+        let html = render("<style>/*THEME*/</style>/*X*/", &[("X", "42")]);
+        assert!(html.ends_with("42") && !html.contains("/*THEME*/"));
+    }
 }

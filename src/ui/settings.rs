@@ -1,13 +1,13 @@
 //! Écran de paramètres : édite `config.toml` puis se ferme.
 //! Code de sortie : `SAVED` si la config a été enregistrée, `QUIT` pour arrêter le kiosk, `CANCELLED` sinon.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::Result;
 use serde::Deserialize;
 use url::Url;
 
-use super::{Ui, WindowSpec, js_string, render};
+use super::{Ui, WindowSpec, js_string, js_value, render};
 use crate::config::{Config, WindowMode};
 use crate::{health, update};
 
@@ -37,14 +37,11 @@ enum Message {
 
 /// `can_cancel` : faux au premier lancement, quand aucune config valide n'existe.
 pub fn run(path: &Path, can_cancel: bool) -> Result<()> {
-    let initial = Config::load(path)
-        .ok()
-        .and_then(|c| serde_json::to_value(c).ok())
-        .unwrap_or_else(Config::defaults_json);
+    let initial = Config::editable_json(path);
     let html = render(
         TEMPLATE,
         &[
-            ("CONFIG", &initial.to_string()),
+            ("CONFIG", &js_value(&initial)),
             ("CAN_CANCEL", if can_cancel { "true" } else { "false" }),
             ("VERSION", &js_string(env!("CARGO_PKG_VERSION"))),
         ],
@@ -68,7 +65,7 @@ pub fn run(path: &Path, can_cancel: bool) -> Result<()> {
     })
 }
 
-fn handle(ui: &Ui, path: &PathBuf, body: &str) {
+fn handle(ui: &Ui, path: &Path, body: &str) {
     let Ok(msg) = serde_json::from_str::<Message>(body) else { return };
     match msg {
         Message::Test { url } => {

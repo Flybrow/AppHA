@@ -107,6 +107,48 @@ pub struct Config {
     pub supervisor: SupervisorConfig,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            url: Url::parse("http://homeassistant.local:8123").expect("URL par défaut valide"),
+            dashboard: String::new(),
+            token: String::new(),
+            browser: default_browser(),
+            command: default_command(),
+            insecure_tls: false,
+            auto_update: true,
+            window: WindowConfig::default(),
+            supervisor: SupervisorConfig::default(),
+        }
+    }
+}
+
+/// Fusion récursive : les valeurs de `patch` remplacent celles de `base`.
+fn merge(base: &mut serde_json::Value, patch: serde_json::Value) {
+    match (base, patch) {
+        (serde_json::Value::Object(base), serde_json::Value::Object(patch)) => {
+            for (key, value) in patch {
+                merge(base.entry(key).or_insert(serde_json::Value::Null), value);
+            }
+        }
+        (base, patch) => *base = patch,
+    }
+}
+
+/// Reprend propriétaire et droits de `original` (s'il existe) sur `target`.
+#[cfg(unix)]
+fn copy_ownership(original: &Path, target: &Path) -> Result<()> {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let Ok(meta) = std::fs::metadata(original) else {
+        // Nouveau fichier : il contient le jeton, lisible seulement par son propriétaire.
+        return Ok(std::fs::set_permissions(target, std::fs::Permissions::from_mode(0o600))?);
+    };
+    std::fs::set_permissions(target, std::fs::Permissions::from_mode(meta.mode() & 0o7777))?;
+    // Échoue sans root si le propriétaire diffère : sans conséquence, c'est alors l'utilisateur courant.
+    let _ = std::os::unix::fs::chown(target, Some(meta.uid()), Some(meta.gid()));
+    Ok(())
+}
+
 fn default_true() -> bool {
     true
 }
@@ -123,9 +165,8 @@ impl Config {
     pub fn load(path: &Path) -> Result<Self> {
         let raw = std::fs::read_to_string(path)
             .with_context(|| format!("lecture de {}", path.display()))?;
-        let cfg: Config =
+        let mut cfg: Config =
             toml::from_str(&raw).with_context(|| format!("analyse de {}", path.display()))?;
-        let mut cfg = cfg;
         if cfg.window.fullscreen.take() == Some(false) && cfg.window.mode == WindowMode::Fullscreen {
             cfg.window.mode = WindowMode::Windowed;
         }
@@ -140,28 +181,40 @@ impl Config {
         Ok(cfg)
     }
 
-    /// Écrit la config, en créant le dossier parent si besoin.
+    /// Écrit la config de façon atomique (fichier temporaire puis renommage) : une
+    /// coupure de courant ne laisse jamais un fichier tronqué. Sous Unix, le
+    /// propriétaire et les droits du fichier existant sont conservés (jeton protégé).
     pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir).with_context(|| format!("création de {}", dir.display()))?;
         }
         let raw = toml::to_string_pretty(self).context("sérialisation de la config")?;
-        std::fs::write(path, raw).with_context(|| format!("écriture de {}", path.display()))
+        let tmp = path.with_extension("toml.tmp");
+        std::fs::write(&tmp, raw).with_context(|| format!("écriture de {}", tmp.display()))?;
+        #[cfg(unix)]
+        copy_ownership(path, &tmp)?;
+        std::fs::rename(&tmp, path).with_context(|| format!("remplacement de {}", path.display()))
     }
 
-    /// Valeurs par défaut proposées au premier lancement (aucune config).
-    pub fn defaults_json() -> serde_json::Value {
-        serde_json::json!({
-            "url": "http://homeassistant.local:8123",
-            "dashboard": "",
-            "token": "",
-            "browser": default_browser(),
-            "command": default_command(),
-            "insecure_tls": false,
-            "auto_update": true,
-            "window": WindowConfig::default(),
-            "supervisor": SupervisorConfig::default(),
-        })
+    /// Config à éditer (assistant, `config`, écran de paramètres) : valeurs par
+    /// défaut complétées par le fichier. Un fichier invalide est signalé puis
+    /// conservé autant que possible, au lieu d'être silencieusement remplacé.
+    pub fn editable_json(path: &Path) -> serde_json::Value {
+        let mut json = serde_json::to_value(Config::default()).unwrap_or_default();
+        if !path.is_file() {
+            return json;
+        }
+        let file = std::fs::read_to_string(path)
+            .map_err(anyhow::Error::from)
+            .and_then(|raw| toml::from_str::<serde_json::Value>(&raw).map_err(Into::into));
+        match file {
+            Ok(values) => merge(&mut json, values),
+            Err(e) => crate::warn!("{} illisible ({e}) : valeurs par défaut proposées", path.display()),
+        }
+        if let Err(e) = Config::from_json(json.clone()) {
+            crate::warn!("configuration actuelle invalide : {e:#}");
+        }
+        json
     }
 
     fn validate(&self) -> Result<()> {
@@ -209,4 +262,69 @@ pub fn locate(explicit: Option<PathBuf>) -> Result<PathBuf> {
         .or(candidates.last())
         .cloned()
         .context("aucun dossier de configuration disponible — utilisez --config")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn merge_keeps_defaults_and_overrides() {
+        let mut base = json!({"a": 1, "w": {"x": 1, "y": 2}});
+        merge(&mut base, json!({"w": {"y": 3}, "b": true}));
+        assert_eq!(base, json!({"a": 1, "w": {"x": 1, "y": 3}, "b": true}));
+    }
+
+    #[test]
+    fn default_round_trips_through_json() {
+        let json = serde_json::to_value(Config::default()).unwrap();
+        assert!(Config::from_json(json).is_ok());
+    }
+
+    #[test]
+    fn validation() {
+        let mut json = serde_json::to_value(Config::default()).unwrap();
+        json["window"]["rotation"] = json!(45);
+        assert!(Config::from_json(json.clone()).is_err());
+        json["window"]["rotation"] = json!(180);
+        json["url"] = json!("ftp://ha");
+        assert!(Config::from_json(json.clone()).is_err());
+        json["url"] = json!("https://ha:8123");
+        json["browser"] = json!("external");
+        json["command"] = json!([]);
+        assert!(Config::from_json(json).is_err());
+    }
+
+    #[test]
+    fn dashboard_url() {
+        let mut cfg = Config { url: Url::parse("https://ha:8123/").unwrap(), ..Config::default() };
+        assert_eq!(cfg.dashboard_url().as_str(), "https://ha:8123/");
+        cfg.dashboard = "/lovelace-kiosk/0/".into();
+        assert_eq!(cfg.dashboard_url().as_str(), "https://ha:8123/lovelace-kiosk/0");
+    }
+
+    #[test]
+    fn legacy_fullscreen_false_becomes_windowed() {
+        let dir = std::env::temp_dir().join(format!("hk-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.toml");
+        std::fs::write(&path, "url = \"http://ha\"
+[window]
+fullscreen = false
+").unwrap();
+        assert_eq!(Config::load(&path).unwrap().window.mode, WindowMode::Windowed);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn save_is_readable_back() {
+        let dir = std::env::temp_dir().join(format!("hk-save-{}", std::process::id()));
+        let path = dir.join("config.toml");
+        let cfg = Config { token: "secret".into(), ..Config::default() };
+        cfg.save(&path).unwrap();
+        assert_eq!(Config::load(&path).unwrap().token, "secret");
+        assert!(!path.with_extension("toml.tmp").exists());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
 }

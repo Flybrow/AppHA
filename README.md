@@ -5,7 +5,7 @@ Affiche votre dashboard Home Assistant en plein écran, en continu, sur un Raspb
 - **Connexion automatique** avec un jeton longue durée : aucun écran de connexion.
 - **Toujours affiché** : relance après un crash, après une coupure de Home Assistant ou du réseau, et redémarrage préventif planifié.
 - **Léger** : animations désactivées par défaut sous Linux, fluide même sur un Raspberry Pi 3. Le kiosk lui-même consomme quelques Mo.
-- **Mises à jour automatiques** depuis GitHub.
+- **Mises à jour automatiques** depuis GitHub (vérification toutes les 6 h), sans intervention.
 - Compatible HTTP, HTTPS (certificat auto-signé compris), IP locale, nom de domaine et Nabu Casa.
 
 ---
@@ -68,8 +68,8 @@ Avec un clavier ou un écran tactile, l'**écran de paramètres** s'ouvre aussi 
 |---|---|
 | Redémarrer le kiosk | `sudo systemctl restart ha-kiosk` |
 | Arrêter le kiosk | `sudo systemctl stop ha-kiosk` |
-| Mettre à jour maintenant | `sudo ha-kiosk update` |
-| Voir les journaux | `journalctl -b \| grep ha-kiosk` |
+| Mettre à jour maintenant | `ha-kiosk update`, ou bouton dans les paramètres |
+| Voir les journaux | `journalctl -t ha-kiosk -f` |
 | Tester la connexion à HA | `sudo ha-kiosk check` |
 
 #### Revenir au bureau
@@ -151,9 +151,15 @@ Relancez la commande d'installation (`curl …`) : elle met à jour le programme
 **L'affichage est lent sur Raspberry Pi**
 Vérifiez que `animations` vaut `non`. Un Pi 3 bride sa fréquence au-delà de 60 °C : un dissipateur ou un petit ventilateur aide. Une alimentation trop faible (sous-tension) le ralentit aussi : `vcgencmd get_throttled` doit afficher `0x0`.
 
+**« Permission denied » en enregistrant les paramètres ou en installant une mise à jour**
+L'installation date d'avant la version 0.8 : relancez la commande d'installation (`curl …`). La configuration est conservée.
+
+**Les journaux sont vides avec `journalctl -u ha-kiosk`**
+Utilisez `journalctl -t ha-kiosk -f` (installation 0.8 et suivantes) ou `journalctl -b | grep ha-kiosk`.
+
 **Je ne suis pas connecté automatiquement**
 Le jeton n'est utilisé qu'avec `browser = auto` ou `webview`, et avec Chromium. `cog` et Firefox ne permettent pas la connexion automatique.
 
 ---
 
-Licence MIT.
+Développement : voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Licence MIT.

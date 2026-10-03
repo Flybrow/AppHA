@@ -123,7 +123,11 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
             }
             Stop::Settings => {
                 info!("ouverture des paramètres");
-                let outcome = backend::open_settings(config_path, true)?;
+                // Un échec ici ne doit pas arrêter le kiosk : on reprend l'affichage.
+                let outcome = backend::open_settings(config_path, true).unwrap_or_else(|e| {
+                    warn!("paramètres : {e:#}");
+                    backend::SettingsOutcome::Cancelled
+                });
                 if outcome == backend::SettingsOutcome::Updated {
                     return restart_self();
                 }

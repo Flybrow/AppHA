@@ -30,6 +30,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: test "${GITHUB_REF_NAME#v}" = "$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)"
+      - run: cargo test --locked
       - run: cargo build --release --locked
 
       - name: Archive Linux

@@ -56,5 +56,5 @@ systemctl enable ha-kiosk.service
 
 echo "Terminé. Démarrage : sudo systemctl start ha-kiosk (ou redémarrez)"
 echo "Reconfigurer : sudo ha-kiosk --config $CONF setup"
-echo "Logs : journalctl -u ha-kiosk -f"
+echo "Logs : journalctl -t ha-kiosk -f"
 echo "Mises à jour : automatiques toutes les 6 h, ou à la main : sudo ha-kiosk update"
