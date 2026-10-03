@@ -5,6 +5,7 @@ mod auth;
 mod backend;
 mod config;
 mod console;
+mod display;
 mod health;
 mod log;
 mod memory;
@@ -12,6 +13,7 @@ mod paths;
 mod supervisor;
 mod ui;
 mod update;
+mod wizard;
 
 use std::path::PathBuf;
 
@@ -40,6 +42,8 @@ enum Cmd {
     /// Installe la dernière release GitHub si elle est plus récente
     /// (code de sortie 3 : déjà à jour).
     Update,
+    /// Assistant de configuration en ligne de commande (questions / réponses).
+    Setup,
     /// Ouvre l'écran de paramètres.
     #[command(name = backend::SETTINGS_SUBCOMMAND)]
     Settings {
@@ -69,6 +73,9 @@ fn run() -> Result<()> {
         return manual_update();
     }
     let path = config::locate(cli.config)?;
+    if let Cmd::Setup = command {
+        return wizard::run(&path);
+    }
     if let Cmd::Settings { first_run } = command {
         return ui::settings::run(&path, !first_run);
     }
@@ -86,7 +93,7 @@ fn run() -> Result<()> {
         Cmd::Run => supervisor::run(cfg, &path),
         Cmd::Webview => backend::webview::run(&cfg),
         Cmd::Check => check(&cfg, &path),
-        Cmd::Settings { .. } | Cmd::Update => unreachable!(),
+        Cmd::Settings { .. } | Cmd::Update | Cmd::Setup => unreachable!(),
     }
 }
 

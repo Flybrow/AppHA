@@ -77,6 +77,15 @@
       <label><span class="name">Largeur</span><input type="number" min="200" data-key="window.width"></label>
       <label><span class="name">Hauteur</span><input type="number" min="200" data-key="window.height"></label>
     </div>
+    <label><span class="name">Rotation de l'écran</span>
+      <select data-key="window.rotation" data-number>
+        <option value="0">Normale</option>
+        <option value="90">90° (portrait)</option>
+        <option value="180">180° (retournée)</option>
+        <option value="270">270° (portrait inversé)</option>
+      </select>
+      <div class="hint">Linux (cage) uniquement. Sous Windows : paramètres d'affichage du système.</div>
+    </label>
     <label class="check"><input type="checkbox" data-key="window.gpu">
       <span><span class="name">Accélération matérielle (GPU)</span>
       <div class="hint">Animations plus fluides, mais environ 70 Mo de RAM en plus.</div></span>
@@ -149,14 +158,14 @@
 
   function read(el) {
     if (el.type === "checkbox") return el.checked;
-    if (el.type === "number") return Number(el.value) || 0;
+    if (el.type === "number" || el.hasAttribute("data-number")) return Number(el.value) || 0;
     if (el.hasAttribute("data-list")) return el.value.split("\n").map((s) => s.trim()).filter(Boolean);
     return el.value.trim();
   }
   function write(el, v) {
     if (el.type === "checkbox") el.checked = !!v;
     else if (el.hasAttribute("data-list")) el.value = (v || []).join("\n");
-    else el.value = v ?? "";
+    else el.value = String(v ?? "");
   }
 
   function collect() {

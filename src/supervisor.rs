@@ -87,6 +87,7 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
     let mut backoff = MIN_BACKOFF;
     let mut probe = MemoryProbe::new();
     let mut updater = Updater::new(cfg.auto_update);
+    crate::display::apply_rotation(&cfg);
     info!("dashboard : {} (navigateur : {:?})", cfg.dashboard_url(), cfg.resolved_browser());
 
     loop {
@@ -127,6 +128,7 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
                         Ok(new) => {
                             info!("configuration rechargée");
                             cfg = new;
+                            crate::display::apply_rotation(&cfg);
                         }
                         Err(e) => warn!("{e:#}"),
                     }

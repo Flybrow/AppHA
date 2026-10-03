@@ -40,6 +40,8 @@ pub struct WindowConfig {
     /// Accélération matérielle de la WebView. Désactivée, elle économise ~70 Mo
     /// (process GPU) au prix d'un rendu logiciel des animations.
     pub gpu: bool,
+    /// Rotation de l'écran en degrés (0, 90, 180, 270), appliquée sous Wayland/cage.
+    pub rotation: u16,
     /// Ancien réglage (`fullscreen = false`), converti en `mode` au chargement.
     #[serde(skip_serializing)]
     fullscreen: Option<bool>,
@@ -47,7 +49,7 @@ pub struct WindowConfig {
 
 impl Default for WindowConfig {
     fn default() -> Self {
-        Self { mode: WindowMode::Fullscreen, width: 1280, height: 800, gpu: false, fullscreen: None }
+        Self { mode: WindowMode::Fullscreen, width: 1280, height: 800, gpu: false, rotation: 0, fullscreen: None }
     }
 }
 
@@ -161,6 +163,9 @@ impl Config {
     fn validate(&self) -> Result<()> {
         if !matches!(self.url.scheme(), "http" | "https") {
             bail!("`url` doit être en http:// ou https://");
+        }
+        if ![0, 90, 180, 270].contains(&self.window.rotation) {
+            bail!("`window.rotation` doit valoir 0, 90, 180 ou 270");
         }
         if self.browser == Browser::External && self.command.is_empty() {
             bail!("`command` est vide alors que browser = \"external\"");

@@ -33,7 +33,8 @@ auto_update = true
 mode = "fullscreen"   # fullscreen | windowed | borderless (fenêtré sans bordure)
 width = 1280          # taille en modes windowed / borderless
 height = 800
-gpu = false           # accélération matérielle WebView : +~70 Mo de RAM, animations plus fluides
+gpu = false
+rotation = 0          # 0 | 90 | 180 | 270 (Linux/cage ; écran officiel Pi retourné : 180)           # accélération matérielle WebView : +~70 Mo de RAM, animations plus fluides
 
 [supervisor]
 check_interval_secs = 10

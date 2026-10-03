@@ -20,7 +20,7 @@ install_pkgs() {
 }
 
 echo "==> Paquets (cage + cog/WPE WebKit)"
-install_pkgs cog
+install_pkgs cog wlr-randr
 
 id "$KIOSK_USER" >/dev/null 2>&1 || useradd -m -G video,input,render "$KIOSK_USER"
 usermod -aG video,input "$KIOSK_USER" || true
@@ -28,7 +28,18 @@ usermod -aG video,input "$KIOSK_USER" || true
 echo "==> Binaire et configuration"
 install -m 0755 "$BIN" /usr/local/bin/ha-kiosk
 install -d /etc/ha-kiosk
-[ -f /etc/ha-kiosk/config.toml ] || install -m 0640 -g "$KIOSK_USER" "$HERE/../../config.example.toml" /etc/ha-kiosk/config.toml
+CONF=/etc/ha-kiosk/config.toml
+if [ ! -f "$CONF" ]; then
+    # Assistant interactif si un terminal est disponible (y compris via curl | sh).
+    if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        echo "==> Assistant de configuration"
+        /usr/local/bin/ha-kiosk --config "$CONF" setup </dev/tty >/dev/tty || true
+    fi
+    [ -f "$CONF" ] || install -m 0640 "$HERE/../../config.example.toml" "$CONF"
+fi
+# Le fichier contient le jeton : lisible seulement par root et le kiosk.
+chown "root:$(id -gn "$KIOSK_USER")" "$CONF"
+chmod 0640 "$CONF"
 
 echo "==> Service systemd"
 sed -e "s/%KIOSK_USER%/$KIOSK_USER/" -e "s/%KIOSK_UID%/$(id -u "$KIOSK_USER")/" \
@@ -39,6 +50,7 @@ systemctl daemon-reload
 systemctl enable ha-kiosk.service
 systemctl enable --now ha-kiosk-update.timer
 
-echo "Terminé. Éditez /etc/ha-kiosk/config.toml puis : sudo systemctl start ha-kiosk"
+echo "Terminé. Démarrage : sudo systemctl start ha-kiosk (ou redémarrez)"
+echo "Reconfigurer : sudo ha-kiosk --config $CONF setup"
 echo "Logs : journalctl -u ha-kiosk -f"
 echo "Mises à jour : quotidiennes (ha-kiosk-update.timer), ou à la main : sudo ha-kiosk update"

@@ -37,7 +37,7 @@ curl -fsSL https://raw.githubusercontent.com/Flybrow/AppHA/main/deploy/linux/get
 La commande télécharge la dernière [release](https://github.com/Flybrow/AppHA/releases), installe `cage` (compositeur Wayland mono-application), `cog` et WebKitGTK, crée le service systemd et démarre sur tty1. Ensuite :
 
 ```sh
-sudo nano /etc/ha-kiosk/config.toml   # url, token…
+sudo ha-kiosk --config /etc/ha-kiosk/config.toml setup   # assistant (lancé aussi à l'installation)
 sudo systemctl start ha-kiosk
 journalctl -u ha-kiosk -f             # logs
 ```
