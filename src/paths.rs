@@ -31,6 +31,7 @@ fn base_dir(win_var: &str, xdg_var: &str, home_fallback: &str) -> Option<PathBuf
 }
 
 /// Vrai si `program` est trouvable dans le PATH.
+#[cfg_attr(not(unix), allow(dead_code))]
 pub fn in_path(program: &str) -> bool {
     let Some(path) = env::var_os("PATH") else { return false };
     let exts: &[&str] = if cfg!(windows) { &["", ".exe", ".cmd", ".bat"] } else { &[""] };
