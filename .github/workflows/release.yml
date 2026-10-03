@@ -40,13 +40,11 @@ jobs:
           cp target/release/ha-kiosk config.example.toml README.md LICENSE dist/ha-kiosk/
           cp -r deploy dist/ha-kiosk/
           tar -C dist -czf ha-kiosk-${{ matrix.name }}.tar.gz ha-kiosk
-      - name: Archive Windows
+      - name: Exécutable Windows
         if: runner.os == 'Windows'
         shell: pwsh
-        run: |
-          New-Item -ItemType Directory dist/ha-kiosk | Out-Null
-          Copy-Item target/release/ha-kiosk.exe, config.example.toml, README.md, LICENSE dist/ha-kiosk/
-          Compress-Archive dist/ha-kiosk ha-kiosk-${{ matrix.name }}.zip
+        # Un seul fichier : la configuration se fait au premier lancement.
+        run: Copy-Item target/release/ha-kiosk.exe ha-kiosk-${{ matrix.name }}.exe
 
       - uses: actions/upload-artifact@v4
         with:

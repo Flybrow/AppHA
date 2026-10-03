@@ -89,9 +89,9 @@ sudo reboot
 
 Windows 10 ou 11 (64 bits).
 
-1. Téléchargez **`ha-kiosk-windows-x86_64.zip`** depuis la [dernière version](https://github.com/Flybrow/AppHA/releases/latest).
-2. Décompressez-le, par exemple dans `C:\AppHA`.
-3. Double-cliquez sur **`ha-kiosk.exe`**. Si Windows affiche « Windows a protégé votre ordinateur », cliquez sur **Informations complémentaires**, puis **Exécuter quand même**.
+1. Téléchargez **`ha-kiosk-windows-x86_64.exe`** depuis la [dernière version](https://github.com/Flybrow/AppHA/releases/latest).
+2. Placez-le dans un dossier à vous, par exemple `C:\AppHA` : il s'y mettra à jour tout seul.
+3. Double-cliquez dessus. Si Windows affiche « Windows a protégé votre ordinateur », cliquez sur **Informations complémentaires**, puis **Exécuter quand même**.
 4. L'**écran de paramètres** s'ouvre : saisissez l'adresse de Home Assistant et le jeton, puis cliquez sur **Enregistrer et lancer**.
 
 **Pendant l'utilisation :**

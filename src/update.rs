@@ -1,5 +1,5 @@
-//! Mise à jour depuis les releases GitHub, via `curl` et `tar` (présents sous
-//! Windows 10+ et Linux) : aucune pile TLS embarquée, aucune RAM au repos.
+//! Mise à jour depuis les releases GitHub, via `curl` (et `tar` sous Linux), présents
+//! sous Windows 10+ et Linux : aucune pile TLS embarquée, aucune RAM au repos.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -36,12 +36,14 @@ pub fn install(release: &Release) -> Result<()> {
     result
 }
 
-fn download_and_replace(url: &str, archive: &Path, dir: &Path) -> Result<()> {
-    run(curl().arg("-o").arg(archive).arg(url)).with_context(|| format!("téléchargement de {url}"))?;
-    // bsdtar (Windows) lit les .zip, GNU tar détecte la compression gzip.
-    run(Command::new("tar").arg("-xf").arg(archive).arg("-C").arg(dir)).context("extraction de l'archive")?;
-    let new = dir.join("ha-kiosk").join(if cfg!(windows) { "ha-kiosk.exe" } else { "ha-kiosk" });
-    replace_current_exe(&new)
+/// Windows : l'asset est l'exécutable lui-même. Linux : archive (binaire + installeur).
+fn download_and_replace(url: &str, download: &Path, dir: &Path) -> Result<()> {
+    run(curl().arg("-o").arg(download).arg(url)).with_context(|| format!("téléchargement de {url}"))?;
+    if cfg!(windows) {
+        return replace_current_exe(download);
+    }
+    run(Command::new("tar").arg("-xzf").arg(download).arg("-C").arg(dir)).context("extraction de l'archive")?;
+    replace_current_exe(&dir.join("ha-kiosk").join("ha-kiosk"))
 }
 
 /// Remplacement atomique. Sous Windows, un exécutable en cours d'exécution ne
@@ -93,7 +95,7 @@ fn old_path(exe: &Path) -> PathBuf {
 
 fn asset_name() -> String {
     if cfg!(windows) {
-        format!("ha-kiosk-windows-{}.zip", std::env::consts::ARCH)
+        format!("ha-kiosk-windows-{}.exe", std::env::consts::ARCH)
     } else {
         format!("ha-kiosk-linux-{}.tar.gz", std::env::consts::ARCH)
     }

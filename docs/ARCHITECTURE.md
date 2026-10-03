@@ -50,7 +50,7 @@ cage (Linux)                         ← compositeur Wayland, lancé par systemd
 
 - **Animations à 1 ms plutôt que supprimées** : sur un Raspberry Pi 3, les animations du frontend HA faisaient monter le processeur à 130 % en continu. Le passage à 1 ms le ramène à 5 %. Les supprimer complètement casserait les cartes qui attendent `transitionend` (popups Bubble Card).
 - **GPU désactivé par défaut** : environ 70 Mo économisés sous Windows. Sur un Pi 3, WebKit ne peut de toute façon pas faire le rendu sur ce GPU.
-- **Mise à jour par `curl` et `tar`** : aucune pile TLS embarquée, et aucune RAM utilisée entre deux vérifications.
+- **Mise à jour par `curl` (et `tar` sous Linux)** : aucune pile TLS embarquée, et aucune RAM utilisée entre deux vérifications. Sous Windows, l'asset de release est directement l'`.exe`. Les versions 0.9.0 et antérieures attendaient un `.zip` : elles doivent être retéléchargées une fois.
 - **Installation Linux** : binaire dans `/opt/ha-kiosk` et config `0600`, tous deux propriété de l'utilisateur du kiosk. Ainsi, l'écran de paramètres et la mise à jour fonctionnent sans root.
 - **Bac à sable WebKit désactivé** (service systemd) : bubblewrap échoue sous ce service et provoque un écran noir. Le kiosk n'affiche que Home Assistant.
 
