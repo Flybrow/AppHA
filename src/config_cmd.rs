@@ -37,6 +37,7 @@ const SETTINGS: &[Setting] = &[
     Setting { name: "width", pointer: "/window/width", kind: Kind::Number, help: "largeur en mode fenêtré" },
     Setting { name: "height", pointer: "/window/height", kind: Kind::Number, help: "hauteur en mode fenêtré" },
     Setting { name: "gpu", pointer: "/window/gpu", kind: Kind::Bool, help: "accélération matérielle (+~70 Mo)" },
+    Setting { name: "animations", pointer: "/window/animations", kind: Kind::Bool, help: "animations des pages (non = plus fluide sur Pi)" },
     Setting { name: "auto_update", pointer: "/auto_update", kind: Kind::Bool, help: "mise à jour automatique" },
     Setting { name: "restart_every_hours", pointer: "/supervisor/restart_every_hours", kind: Kind::Number, help: "redémarrage préventif (0 = jamais)" },
     Setting { name: "max_memory_mb", pointer: "/supervisor/max_memory_mb", kind: Kind::Number, help: "limite RAM du navigateur (0 = aucune)" },

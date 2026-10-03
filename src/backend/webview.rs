@@ -28,6 +28,7 @@ pub fn run(cfg: &Config) -> Result<()> {
         close_code: 0,
         insecure_tls: cfg.insecure_tls,
         gpu: w.gpu,
+        animations: w.animations,
     };
     // Page de chargement locale : elle attend HA puis redirige vers le dashboard.
     let html = render(
@@ -37,15 +38,23 @@ pub fn run(cfg: &Config) -> Result<()> {
     let auth_script = auth::init_script(&cfg.url, &cfg.token);
     let insecure = cfg.insecure_tls;
     let gpu = w.gpu;
+    let animations = w.animations;
     let base = cfg.url.clone();
 
     ui::run(spec, move |mut builder, ui| {
         builder = builder.with_html(html).with_initialization_script(ui::SETTINGS_GESTURE_JS);
+        if !animations {
+            builder = builder.with_initialization_script(ui::REDUCE_MOTION_JS);
+        }
+        if std::env::var_os("HA_KIOSK_DEBUG_ANIMATIONS").is_some() {
+            builder = builder.with_initialization_script(ui::DEBUG_ANIMATIONS_JS);
+        }
         if let Some(script) = &auth_script {
             builder = builder.with_initialization_script(script);
         }
         builder = builder.with_ipc_handler(move |req| match req.body().as_str() {
             "ready" => wait_then_redirect(ui.clone(), base.clone()),
+            body if body.starts_with("debug:") => crate::info!("animations {}", &body[6..]),
             "settings" => {
                 ui::allow_foreground_handoff();
                 ui.exit(EXIT_SETTINGS)

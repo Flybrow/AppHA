@@ -42,6 +42,9 @@ pub struct WindowConfig {
     pub gpu: bool,
     /// Rotation de l'écran en degrés (0, 90, 180, 270), appliquée sous Wayland/cage.
     pub rotation: u16,
+    /// Animations et transitions des pages. Désactivées, le frontend HA repeint
+    /// beaucoup moins : gros gain de CPU sur les petites machines (défaut : non sous Linux).
+    pub animations: bool,
     /// Ancien réglage (`fullscreen = false`), converti en `mode` au chargement.
     #[serde(skip_serializing)]
     fullscreen: Option<bool>,
@@ -49,7 +52,7 @@ pub struct WindowConfig {
 
 impl Default for WindowConfig {
     fn default() -> Self {
-        Self { mode: WindowMode::Fullscreen, width: 1280, height: 800, gpu: false, rotation: 0, fullscreen: None }
+        Self { mode: WindowMode::Fullscreen, width: 1280, height: 800, gpu: false, rotation: 0, animations: !cfg!(target_os = "linux"), fullscreen: None }
     }
 }
 

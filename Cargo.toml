@@ -1,6 +1,6 @@
 [package]
 name = "ha-kiosk"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2024"
 description = "Afficheur kiosk lÃ©ger et supervisÃ© pour les dashboards Home Assistant"
 license = "MIT"
@@ -20,6 +20,7 @@ wry = "0.57.0"
 [target.'cfg(target_os = "linux")'.dependencies]
 # MÃƒÂªme version que wry : accÃƒÂ¨s ÃƒÂ  la politique TLS de WebKitGTK (certificats auto-signÃƒÂ©s).
 webkit2gtk = { version = "2.0", features = ["v2_40"] }
+gtk = "0.18"
 
 [profile.release]
 opt-level = 3

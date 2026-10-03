@@ -14,6 +14,10 @@ use crate::paths;
 
 /// Script injecté dans chaque page : geste et raccourci d'ouverture des paramètres.
 pub const SETTINGS_GESTURE_JS: &str = include_str!("assets/gesture.js");
+/// Neutralise animations et transitions CSS (option `window.animations = false`).
+pub const REDUCE_MOTION_JS: &str = include_str!("assets/reduce-motion.js");
+/// Journalise animations et boucles d'affichage (HA_KIOSK_DEBUG_ANIMATIONS=1).
+pub const DEBUG_ANIMATIONS_JS: &str = include_str!("assets/debug-animations.js");
 
 pub enum UiEvent {
     Eval(String),
@@ -48,6 +52,9 @@ pub struct WindowSpec<'a> {
     pub insecure_tls: bool,
     /// Accélération matérielle (Linux : politique WebKitGTK ; Windows : voir `backend::webview`).
     pub gpu: bool,
+    /// Faux : demande aussi au système de réduire les animations (prefers-reduced-motion, Linux).
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+    pub animations: bool,
 }
 
 /// Ouvre la fenêtre et exécute la boucle d'événements (ne rend jamais la main).
@@ -67,6 +74,14 @@ where
     let mut context = WebContext::new(paths::data_dir().map(|d| d.join(spec.profile)));
     let ui = Ui(event_loop.create_proxy());
     let builder = setup(WebViewBuilder::new_with_web_context(&mut context), ui)?;
+    #[cfg(target_os = "linux")]
+    if !spec.animations {
+        // WebKitGTK expose ce réglage GTK aux pages via `prefers-reduced-motion`.
+        use gtk::prelude::GtkSettingsExt;
+        if let Some(settings) = gtk::Settings::default() {
+            settings.set_gtk_enable_animations(false);
+        }
+    }
     let webview = attach(builder, &window, spec.insecure_tls, spec.gpu).context("création de la WebView")?;
     window.set_focus();
     let close_code = spec.close_code;

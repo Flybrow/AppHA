@@ -78,6 +78,8 @@ pub fn run(path: &Path) -> Result<()> {
         cfg["window"]["width"] = json!(ask_u64("Largeur", u64_at(&cfg, "/window/width"))?);
         cfg["window"]["height"] = json!(ask_u64("Hauteur", u64_at(&cfg, "/window/height"))?);
     }
+    cfg["window"]["animations"] =
+        json!(ask_bool("Animations des pages (n = bien plus fluide sur Raspberry Pi)", bool_at(&cfg, "/window/animations"))?);
     cfg["window"]["gpu"] = json!(ask_bool("Accélération GPU (+~70 Mo, animations plus fluides)", bool_at(&cfg, "/window/gpu"))?);
 
     println!("\n— Stabilité et mises à jour");
