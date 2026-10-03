@@ -12,7 +12,7 @@ dashboard = ""
 token = ""
 
 # auto | webview | external
-#  - auto     : `cog` (WPE WebKit, le plus léger) s'il est installé sous Linux, sinon webview
+#  - auto     : webview (connexion par jeton + paramètres à l'écran)
 #  - webview  : WebView2 (Windows) / WebKitGTK (Linux) intégrée
 #  - external : la commande ci-dessous
 browser = "auto"
@@ -23,7 +23,7 @@ browser = "auto"
 #   ["chromium", "--kiosk", "--noerrdialogs", "--disable-infobars", "--renderer-process-limit=1", "{url}"]
 command = ["cog", "{url}"]
 
-# Accepter un certificat HTTPS auto-signé (WebView2, et cog via --ignore-tls-errors).
+# Accepter un certificat HTTPS auto-signé (WebView2, WebKitGTK, cog).
 insecure_tls = false
 
 # Mise à jour automatique depuis les releases GitHub.

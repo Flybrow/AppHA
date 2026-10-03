@@ -51,9 +51,9 @@ pub fn run(path: &Path) -> Result<()> {
     let browser = choose(
         "Navigateur",
         &[
-            ("auto", "cog si installé (le plus léger), sinon WebView intégrée"),
-            ("webview", "WebView intégrée : paramètres à l'écran, connexion par jeton"),
-            ("external", "commande personnalisée (Chromium, Firefox…)"),
+            ("auto", "WebView intégrée (recommandé) : jeton, paramètres à l'écran"),
+            ("webview", "WebView intégrée"),
+            ("external", "commande personnalisée : Chromium (jeton OK), cog, Firefox (sans jeton)"),
         ],
         str_at(&cfg, "/browser"),
     )?;
@@ -61,6 +61,10 @@ pub fn run(path: &Path) -> Result<()> {
         let current = cfg["command"].as_array().map(|a| join_args(a)).unwrap_or_default();
         let cmd = ask("Commande ({url} = adresse du dashboard)", &current)?;
         cfg["command"] = json!(cmd.split_whitespace().collect::<Vec<_>>());
+        let program = cmd.split_whitespace().next().unwrap_or("");
+        if !token.is_empty() && !crate::auth::external_supports_token(program) {
+            println!("  Attention : {program} ne permet pas la connexion par jeton (WebView ou Chromium requis).");
+        }
     }
     cfg["browser"] = json!(browser);
 

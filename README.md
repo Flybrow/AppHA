@@ -3,8 +3,8 @@
 Afficheur kiosk léger et supervisé pour les dashboards Home Assistant, sous Windows et Linux (Raspberry Pi compris).
 
 - **Superviseur** d'environ 2 Mo de RAM, qui attend que HA soit joignable avant de lancer le navigateur. Il relance le navigateur en cas de crash, de dépassement du budget RAM, de redémarrage planifié ou de retour de HA après une coupure.
-- **Navigateurs** au choix : `cog` (WPE WebKit, le plus léger sous Linux), WebView intégrée (WebView2 ou WebKitGTK), ou n'importe quelle commande (Chromium, Firefox…).
-- **Connexion automatique** avec un jeton longue durée (backend `webview`).
+- **Navigateurs** au choix : WebView intégrée (WebView2 ou WebKitGTK, par défaut), `cog` (WPE WebKit), ou n'importe quelle commande (Chromium, Firefox…).
+- **Connexion automatique par jeton** avec la WebView et les navigateurs Chromium (via une extension générée). `cog` et Firefox ne la permettent pas.
 - HTTP, HTTPS, IP locale, domaine, Nabu Casa.
 
 ## Utilisation

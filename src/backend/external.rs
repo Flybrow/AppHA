@@ -5,6 +5,7 @@ use std::process::Command;
 
 use anyhow::{Context, Result};
 
+use crate::auth;
 use crate::config::Config;
 
 pub fn command(cfg: &Config) -> Result<Command> {
@@ -16,6 +17,13 @@ pub fn command(cfg: &Config) -> Result<Command> {
     // cog (WPE WebKit) sait ignorer un certificat auto-signé.
     if cfg.insecure_tls && Path::new(&program).file_stem().is_some_and(|s| s == "cog") {
         cmd.arg("--ignore-tls-errors");
+    }
+    if !cfg.token.is_empty() {
+        if auth::external_supports_token(&program) {
+            cmd.args(auth::chromium_extension_args(&cfg.url, &cfg.token)?);
+        } else {
+            crate::warn!("{program} ne permet pas la connexion par jeton : utilisez browser = \"webview\" ou Chromium");
+        }
     }
     Ok(cmd)
 }

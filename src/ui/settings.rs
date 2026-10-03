@@ -57,6 +57,7 @@ pub fn run(path: &Path, can_cancel: bool) -> Result<()> {
         height: 820,
         profile: "settings",
         close_code: CANCELLED,
+        insecure_tls: false,
     };
 
     super::run(spec, move |builder, ui| {

@@ -906,7 +906,7 @@ dependencies = [
 
 [[package]]
 name = "ha-kiosk"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -916,6 +916,7 @@ dependencies = [
  "tao",
  "toml 1.1.6+spec-1.1.0",
  "url",
+ "webkit2gtk",
  "wry",
 ]
 

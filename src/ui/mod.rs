@@ -43,6 +43,9 @@ pub struct WindowSpec<'a> {
     pub profile: &'a str,
     /// Code de sortie quand l'utilisateur ferme la fenêtre.
     pub close_code: i32,
+    /// Accepte les certificats HTTPS invalides (auto-signés). Sous Windows, voir
+    /// les arguments navigateur de `backend::webview`.
+    pub insecure_tls: bool,
 }
 
 /// Ouvre la fenêtre et exécute la boucle d'événements (ne rend jamais la main).
@@ -62,7 +65,7 @@ where
     let mut context = WebContext::new(paths::data_dir().map(|d| d.join(spec.profile)));
     let ui = Ui(event_loop.create_proxy());
     let builder = setup(WebViewBuilder::new_with_web_context(&mut context), ui)?;
-    let webview = attach(builder, &window).context("création de la WebView")?;
+    let webview = attach(builder, &window, spec.insecure_tls).context("création de la WebView")?;
     window.set_focus();
     let close_code = spec.close_code;
 
@@ -110,13 +113,21 @@ pub fn js_string(s: &str) -> String {
 }
 
 #[cfg(target_os = "linux")]
-fn attach(builder: WebViewBuilder<'_>, window: &Window) -> wry::Result<WebView> {
+fn attach(builder: WebViewBuilder<'_>, window: &Window, insecure_tls: bool) -> wry::Result<WebView> {
     use tao::platform::unix::WindowExtUnix;
-    use wry::WebViewBuilderExtUnix;
-    builder.build_gtk(window.default_vbox().expect("vbox GTK de tao"))
+    use webkit2gtk::{TLSErrorsPolicy, WebViewExt, WebsiteDataManagerExt};
+    use wry::{WebViewBuilderExtUnix, WebViewExtUnix};
+    let webview = builder.build_gtk(window.default_vbox().expect("vbox GTK de tao"))?;
+    if insecure_tls {
+        // La page de chargement est locale : la politique s'applique avant toute requête vers HA.
+        if let Some(manager) = webview.webview().website_data_manager() {
+            manager.set_tls_errors_policy(TLSErrorsPolicy::Ignore);
+        }
+    }
+    Ok(webview)
 }
 
 #[cfg(not(target_os = "linux"))]
-fn attach(builder: WebViewBuilder<'_>, window: &Window) -> wry::Result<WebView> {
+fn attach(builder: WebViewBuilder<'_>, window: &Window, _insecure_tls: bool) -> wry::Result<WebView> {
     builder.build(window)
 }

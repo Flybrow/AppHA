@@ -26,6 +26,7 @@ pub fn run(cfg: &Config) -> Result<()> {
         // Profil persistant : cookies, cache et session HA survivent aux redémarrages.
         profile: "webview",
         close_code: 0,
+        insecure_tls: cfg.insecure_tls,
     };
     // Page de chargement locale : elle attend HA puis redirige vers le dashboard.
     let html = render(
@@ -86,8 +87,6 @@ fn apply_browser_args(builder: WebViewBuilder<'_>, gpu: bool, insecure: bool) ->
 
 #[cfg(not(windows))]
 fn apply_browser_args(builder: WebViewBuilder<'_>, _gpu: bool, insecure: bool) -> WebViewBuilder<'_> {
-    if insecure {
-        crate::warn!("insecure_tls n'est pas pris en charge par WebKitGTK : installez le certificat dans le magasin système");
-    }
+    let _ = insecure; // géré par la politique TLS de WebKitGTK (ui::attach)
     builder
 }

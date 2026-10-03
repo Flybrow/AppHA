@@ -11,7 +11,7 @@ use crate::paths;
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Browser {
-    /// `external` si `cog` est disponible (Linux), sinon `webview`.
+    /// `webview` : seul backend qui gère à la fois le jeton et l'écran de paramètres.
     Auto,
     /// WebView système intégrée (WebView2 sous Windows, WebKitGTK sous Linux).
     Webview,
@@ -182,7 +182,6 @@ impl Config {
     /// Backend réellement utilisé une fois `auto` résolu.
     pub fn resolved_browser(&self) -> Browser {
         match self.browser {
-            Browser::Auto if cfg!(target_os = "linux") && paths::in_path("cog") => Browser::External,
             Browser::Auto => Browser::Webview,
             other => other,
         }
