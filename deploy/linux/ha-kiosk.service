@@ -10,6 +10,10 @@ TTYPath=/dev/tty1
 StandardInput=tty
 StandardError=journal
 Environment=XDG_RUNTIME_DIR=/run/user/%KIOSK_UID%
+# Le bac à sable bubblewrap de WebKit échoue sous ce service (« Unexpected capabilities ») :
+# écran noir. Le kiosk n'affiche que Home Assistant, on le désactive.
+Environment=WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
+TimeoutStopSec=10
 # cage : compositeur Wayland mono-application (aucun bureau, aucun gestionnaire de fenêtres).
 ExecStart=/usr/bin/cage -d -- /usr/local/bin/ha-kiosk --config /etc/ha-kiosk/config.toml
 # on-failure : « Quitter le kiosk » (sortie normale) arrête le service.

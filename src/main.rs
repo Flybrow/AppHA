@@ -90,7 +90,10 @@ fn run() -> Result<()> {
     let cfg = config::Config::load(&path)?;
 
     match command {
-        Cmd::Run => supervisor::run(cfg, &path),
+        Cmd::Run => {
+            backend::die_with_parent();
+            supervisor::run(cfg, &path)
+        }
         Cmd::Webview => backend::webview::run(&cfg),
         Cmd::Check => check(&cfg, &path),
         Cmd::Settings { .. } | Cmd::Update | Cmd::Setup => unreachable!(),

@@ -21,7 +21,35 @@ pub fn spawn(cfg: &Config, config_path: &Path) -> Result<Child> {
         Browser::External => external::command(cfg)?,
         _ => self_command(config_path, WEBVIEW_SUBCOMMAND)?,
     };
+    die_with_parent_on_exec(&mut cmd);
     cmd.spawn().with_context(|| format!("lancement de {:?}", cmd.get_program()))
+}
+
+/// Linux : reçoit SIGTERM quand le process parent meurt. Sous systemd avec
+/// `PAMName=`, les process quittent le cgroup du service : sans cela, l'arrêt de
+/// cage laisserait le superviseur et le navigateur orphelins.
+#[cfg(target_os = "linux")]
+pub fn die_with_parent() {
+    const PR_SET_PDEATHSIG: i32 = 1;
+    const SIGTERM: u64 = 15;
+    unsafe extern "C" {
+        fn prctl(option: i32, arg2: u64, ...) -> i32;
+    }
+    unsafe { prctl(PR_SET_PDEATHSIG, SIGTERM) };
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn die_with_parent() {}
+
+/// Le navigateur lancé s'arrête avec le superviseur.
+fn die_with_parent_on_exec(cmd: &mut Command) {
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::process::CommandExt;
+        unsafe { cmd.pre_exec(|| Ok(die_with_parent())) };
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = cmd;
 }
 
 /// Issue de l'écran de paramètres.
@@ -37,6 +65,7 @@ pub enum SettingsOutcome {
 /// Ouvre l'écran de paramètres dans un process enfant et attend sa fermeture.
 pub fn open_settings(config_path: &Path, can_cancel: bool) -> Result<SettingsOutcome> {
     let mut cmd = self_command(config_path, SETTINGS_SUBCOMMAND)?;
+    die_with_parent_on_exec(&mut cmd);
     if !can_cancel {
         cmd.arg("--first-run");
     }
