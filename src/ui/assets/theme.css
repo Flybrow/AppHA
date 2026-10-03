@@ -21,6 +21,7 @@ button {
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
 }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+button.link { background: none; border-color: transparent; color: var(--muted, inherit); text-decoration: underline; }
 button:disabled { opacity: .5; cursor: default; }
 .muted { color: var(--muted); }
 .ok { color: var(--ok); }

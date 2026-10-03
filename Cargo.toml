@@ -1,8 +1,8 @@
 [package]
 name = "ha-kiosk"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
-description = "Afficheur kiosk léger et supervisé pour les dashboards Home Assistant"
+description = "Afficheur kiosk lÃ©ger et supervisÃ© pour les dashboards Home Assistant"
 license = "MIT"
 repository = "https://github.com/Flybrow/AppHA"
 

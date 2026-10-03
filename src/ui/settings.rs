@@ -23,7 +23,12 @@ const TEMPLATE: &str = include_str!("assets/settings.html");
 #[serde(tag = "action", rename_all = "snake_case")]
 enum Message {
     Test { url: String },
-    Save { config: serde_json::Value },
+    /// `quit` : enregistre puis arrête le kiosk au lieu de le (re)lancer.
+    Save {
+        config: serde_json::Value,
+        #[serde(default)]
+        quit: bool,
+    },
     Cancel,
     Quit,
     UpdateCheck,
@@ -70,8 +75,8 @@ fn handle(ui: &Ui, path: &PathBuf, body: &str) {
                 ui.eval(format!("onTestResult({ok})"));
             });
         }
-        Message::Save { config } => match Config::from_json(config).and_then(|c| c.save(path)) {
-            Ok(()) => ui.exit(SAVED),
+        Message::Save { config, quit } => match Config::from_json(config).and_then(|c| c.save(path)) {
+            Ok(()) => ui.exit(if quit { QUIT } else { SAVED }),
             Err(e) => ui.eval(format!("showError({})", js_string(&format!("{e:#}")))),
         },
         Message::Cancel => ui.exit(CANCELLED),

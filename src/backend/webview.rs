@@ -44,7 +44,10 @@ pub fn run(cfg: &Config) -> Result<()> {
         }
         builder = builder.with_ipc_handler(move |req| match req.body().as_str() {
             "ready" => wait_then_redirect(ui.clone(), base.clone()),
-            "settings" => ui.exit(EXIT_SETTINGS),
+            "settings" => {
+                ui::allow_foreground_handoff();
+                ui.exit(EXIT_SETTINGS)
+            }
             _ => {}
         });
         Ok(apply_browser_args(builder, gpu, insecure))

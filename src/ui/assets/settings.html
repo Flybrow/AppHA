@@ -132,7 +132,8 @@
   <span id="message" role="status"></span>
   <button type="button" id="quit">Quitter le kiosk</button>
   <button type="button" id="cancel">Annuler</button>
-  <button type="button" class="primary" id="save">Enregistrer</button>
+  <button type="button" class="link" id="save-quit">Enregistrer et fermer</button>
+  <button type="button" class="primary" id="save">Enregistrer et lancer</button>
 </footer>
 
 <script>
@@ -172,7 +173,7 @@
     $("test").disabled = false;
     message(ok ? "Home Assistant joignable ✔" : "Home Assistant injoignable", ok ? "ok" : "err");
   };
-  window.showError = (text) => { $("save").disabled = false; message(text, "err"); };
+  window.showError = (text) => { $("save").disabled = $("save-quit").disabled = false; message(text, "err"); };
   // état : "none" (à jour), "available" (tag), "error" (texte), "installing".
   window.onUpdate = (state, detail) => {
     $("update-check").disabled = false;
@@ -200,11 +201,13 @@
     message("Test en cours…", "muted");
     send({ action: "test", url: read(document.querySelector("[data-key=url]")) });
   });
-  $("save").addEventListener("click", () => {
-    $("save").disabled = true;
+  const save = (quit) => {
+    $("save").disabled = $("save-quit").disabled = true;
     message("Enregistrement…", "muted");
-    send({ action: "save", config: collect() });
-  });
+    send({ action: "save", config: collect(), quit });
+  };
+  $("save").addEventListener("click", () => save(false));
+  $("save-quit").addEventListener("click", () => save(true));
   $("cancel").addEventListener("click", () => send({ action: "cancel" }));
   $("version").textContent = `Version ${VERSION}`;
   $("update-check").addEventListener("click", () => {

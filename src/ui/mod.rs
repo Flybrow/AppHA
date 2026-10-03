@@ -63,6 +63,7 @@ where
     let ui = Ui(event_loop.create_proxy());
     let builder = setup(WebViewBuilder::new_with_web_context(&mut context), ui)?;
     let webview = attach(builder, &window).context("création de la WebView")?;
+    window.set_focus();
     let close_code = spec.close_code;
 
     event_loop.run(move |event, _, control_flow| {
@@ -78,6 +79,22 @@ where
         }
     });
 }
+
+/// Autorise le prochain process lancé à passer au premier plan. Windows refuse
+/// sinon le focus à une fenêtre ouverte par un process d'arrière-plan (le superviseur) :
+/// à appeler depuis la fenêtre active avant de lui passer la main.
+#[cfg(windows)]
+pub fn allow_foreground_handoff() {
+    const ASFW_ANY: u32 = u32::MAX;
+    #[link(name = "user32")]
+    unsafe extern "system" {
+        fn AllowSetForegroundWindow(pid: u32) -> i32;
+    }
+    unsafe { AllowSetForegroundWindow(ASFW_ANY) };
+}
+
+#[cfg(not(windows))]
+pub fn allow_foreground_handoff() {}
 
 const THEME_CSS: &str = include_str!("assets/theme.css");
 
