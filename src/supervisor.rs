@@ -88,6 +88,12 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
     let mut probe = MemoryProbe::new();
     let mut updater = Updater::new(cfg.auto_update);
     crate::display::apply_rotation(&cfg);
+    // Windows : resynchronise l'inscription au démarrage (chemin de l'exe à jour).
+    if cfg!(windows)
+        && let Err(e) = crate::autostart::apply(cfg.autostart)
+    {
+        warn!("{e:#}");
+    }
     info!("dashboard : {} (navigateur : {:?})", cfg.dashboard_url(), cfg.resolved_browser());
 
     loop {

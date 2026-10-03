@@ -2,6 +2,7 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 mod auth;
+mod autostart;
 mod backend;
 mod cli;
 mod config;
@@ -11,6 +12,7 @@ mod health;
 mod log;
 mod memory;
 mod paths;
+mod process;
 mod supervisor;
 mod ui;
 mod update;

@@ -21,13 +21,15 @@ cage (Linux)                         ← compositeur Wayland, lancé par systemd
 | Module | Rôle |
 |---|---|
 | `main.rs` | Ligne de commande et répartition des commandes |
-| `config.rs` | Lecture, validation et enregistrement atomique de `config.toml` |
+| `config.rs` | Lecture, validation et enregistrement atomique de `config.toml`. `Config::commit` est le point de passage unique des modifications (validation, enregistrement, démarrage automatique). |
 | `supervisor.rs` | Boucle de supervision et mise à jour en arrière-plan |
 | `backend/` | Lancement du navigateur : `webview` (intégré) ou `external` (commande) |
 | `ui/` | Fenêtre WebView commune, page de chargement, écran de paramètres, scripts injectés |
 | `cli/` | Commandes texte : `config`, `setup` (assistant), `check`, `update` ; table des réglages partagée |
 | `auth.rs` | Connexion automatique : jeton placé dans le `localStorage` du frontend HA |
 | `update.rs` | Mise à jour depuis les releases GitHub (via `curl` et `tar`) |
+| `autostart.rs` | Démarrage avec la machine : clé `Run` (Windows), service systemd (Linux) |
+| `process.rs` | Lancement de commandes auxiliaires sans fenêtre de console |
 | `display.rs` | Rotation (`wlr-randr`) et détection de l'arrêt du compositeur |
 | `health.rs` | Joignabilité de HA (connexion TCP, sans TLS) |
 | `memory.rs` | RAM de l'arbre de process du navigateur |

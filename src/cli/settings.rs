@@ -45,6 +45,7 @@ pub const SETTINGS: &[Setting] = &[
     setting("gpu", "/window/gpu", Kind::Bool, "accélération matérielle (+~70 Mo, inutile sur Pi 3)"),
     setting("restart_every_hours", "/supervisor/restart_every_hours", Kind::Number, "redémarrage préventif toutes les N heures (0 = jamais)"),
     setting("max_memory_mb", "/supervisor/max_memory_mb", Kind::Number, "limite RAM du navigateur en Mo (0 = aucune, ex. 350 sur Pi 3)"),
+    setting("autostart", "/autostart", Kind::Bool, "lancement au démarrage de la machine"),
     setting("auto_update", "/auto_update", Kind::Bool, "mise à jour automatique"),
     setting("check_interval_secs", "/supervisor/check_interval_secs", Kind::Number, "intervalle de surveillance (s)"),
     setting("failures_before_down", "/supervisor/failures_before_down", Kind::Number, "échecs avant de considérer HA coupé"),

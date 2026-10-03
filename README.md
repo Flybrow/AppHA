@@ -68,6 +68,7 @@ Avec un clavier ou un écran tactile, l'**écran de paramètres** s'ouvre aussi 
 |---|---|
 | Redémarrer le kiosk | `sudo systemctl restart ha-kiosk` |
 | Arrêter le kiosk | `sudo systemctl stop ha-kiosk` |
+| Ne plus lancer le kiosk au démarrage | `sudo ha-kiosk config autostart non` |
 | Mettre à jour maintenant | `ha-kiosk update`, ou bouton dans les paramètres |
 | Voir les journaux | `journalctl -t ha-kiosk -f` |
 | Tester la connexion à HA | `sudo ha-kiosk check` |
@@ -98,7 +99,7 @@ Windows 10 ou 11 (64 bits).
 - **Quitter** : depuis les paramètres, bouton **Quitter le kiosk**.
 - **Mode d'affichage** : plein écran, fenêtré ou fenêtré sans bordure, au choix dans les paramètres.
 
-**Lancement au démarrage de Windows :** appuyez sur Win+R, tapez `shell:startup`, puis placez dans ce dossier un raccourci vers `ha-kiosk.exe`.
+**Lancement au démarrage de Windows :** activé par défaut. Pour le désactiver, décochez **Lancer au démarrage de la machine** dans les paramètres.
 
 Les mises à jour s'installent toutes seules. Vous pouvez aussi lancer la recherche à la main dans les paramètres (**Rechercher une mise à jour**).
 
@@ -138,6 +139,7 @@ Ils sont disponibles dans l'écran de paramètres, dans l'assistant (`ha-kiosk s
 | `gpu` | Accélération matérielle : environ 70 Mo de RAM en plus, inutile sur Pi 3 |
 | `restart_every_hours` | Redémarrage préventif (`0` = jamais) |
 | `max_memory_mb` | Redémarre le navigateur au-delà de cette RAM (`0` = pas de limite) |
+| `autostart` | Lancement au démarrage de la machine (Linux : modifiable avec `sudo`) |
 | `auto_update` | Mise à jour automatique |
 | `browser` | `auto` (recommandé), `webview` ou `external` (Chromium, cog…) |
 

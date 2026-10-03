@@ -76,8 +76,8 @@ fn handle(ui: &Ui, path: &Path, body: &str) {
                 ui.eval(format!("onTestResult({ok})"));
             });
         }
-        Message::Save { config, quit } => match Config::from_json(config).and_then(|c| c.save(path)) {
-            Ok(()) => ui.exit(if quit { QUIT } else { SAVED }),
+        Message::Save { config, quit } => match Config::commit(config, path) {
+            Ok(_) => ui.exit(if quit { QUIT } else { SAVED }),
             Err(e) => ui.eval(format!("showError({})", js_string(&format!("{e:#}")))),
         },
         Message::Cancel => ui.exit(CANCELLED),

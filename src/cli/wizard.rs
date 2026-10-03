@@ -18,7 +18,7 @@ const STEPS: &[(&str, &[&str])] = &[
     ("Home Assistant", &["url", "dashboard", "token", "insecure_tls"]),
     ("Navigateur", &["browser", "command"]),
     ("Affichage", &["mode", "width", "height", "animations", "hide_cursor", "gpu"]),
-    ("Stabilité et mises à jour", &["restart_every_hours", "max_memory_mb", "auto_update"]),
+    ("Stabilité et mises à jour", &["autostart", "restart_every_hours", "max_memory_mb", "auto_update"]),
 ];
 
 pub fn run(path: &Path) -> Result<()> {
@@ -40,7 +40,7 @@ pub fn run(path: &Path) -> Result<()> {
     }
     warn_token_unsupported(&cfg);
 
-    Config::from_json(cfg)?.save(path)?;
+    Config::commit(cfg, path)?;
     println!("\nConfiguration enregistrée dans {}", path.display());
     super::apply_hint();
     Ok(())

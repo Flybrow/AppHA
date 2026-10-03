@@ -101,6 +101,9 @@ pub struct Config {
     /// Mise à jour automatique depuis les releases GitHub, par le superviseur.
     #[serde(default = "default_true")]
     pub auto_update: bool,
+    /// Lancement automatique au démarrage de la machine.
+    #[serde(default = "default_true")]
+    pub autostart: bool,
     #[serde(default)]
     pub window: WindowConfig,
     #[serde(default)]
@@ -117,6 +120,7 @@ impl Default for Config {
             command: default_command(),
             insecure_tls: false,
             auto_update: true,
+            autostart: true,
             window: WindowConfig::default(),
             supervisor: SupervisorConfig::default(),
         }
@@ -201,6 +205,15 @@ impl Config {
         #[cfg(unix)]
         copy_ownership(path, &tmp)?;
         std::fs::rename(&tmp, path).with_context(|| format!("remplacement de {}", path.display()))
+    }
+
+    /// Valide, enregistre puis applique ce qui touche le système (démarrage
+    /// automatique). Point de passage unique de toutes les modifications.
+    pub fn commit(json: serde_json::Value, path: &Path) -> Result<Config> {
+        let cfg = Config::from_json(json)?;
+        cfg.save(path)?;
+        crate::autostart::apply(cfg.autostart).context("configuration enregistrée, mais démarrage automatique non appliqué")?;
+        Ok(cfg)
     }
 
     /// Config à éditer (assistant, `config`, écran de paramètres) : valeurs par

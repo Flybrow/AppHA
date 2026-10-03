@@ -26,6 +26,10 @@ command = ["cog", "{url}"]
 # Accepter un certificat HTTPS auto-signé (WebView2, WebKitGTK, cog).
 insecure_tls = false
 
+# Lancement automatique au démarrage de la machine (Windows : session utilisateur ;
+# Linux : service systemd, modifiable avec sudo).
+autostart = true
+
 # Mise à jour automatique depuis les releases GitHub (vérification toutes les 6 h).
 auto_update = true
 

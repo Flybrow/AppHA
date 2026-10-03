@@ -23,7 +23,7 @@ pub fn run(path: &Path, name: Option<&str>, value: Option<&str>) -> Result<()> {
         None => setting.prompt(&cfg)?,
     };
     setting.set(&mut cfg, new)?;
-    Config::from_json(cfg)?.save(path)?;
+    Config::commit(cfg, path)?;
     println!("{} enregistré dans {}", setting.name, path.display());
     super::apply_hint();
     Ok(())

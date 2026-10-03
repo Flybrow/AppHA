@@ -2,9 +2,11 @@
 //! Windows 10+ et Linux) : aucune pile TLS embarquée, aucune RAM au repos.
 
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
+
+use crate::process::run_quiet as run;
 
 const REPO: &str = "Flybrow/AppHA";
 
@@ -107,21 +109,6 @@ fn curl() -> Command {
     let mut cmd = Command::new("curl");
     cmd.args(["-fsSL", "--max-time", "300"]);
     cmd
-}
-
-/// Exécute sans fenêtre de console et renvoie stdout.
-fn run(cmd: &mut Command) -> Result<Vec<u8>> {
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        cmd.creation_flags(CREATE_NO_WINDOW);
-    }
-    let out = cmd.stdin(Stdio::null()).output().with_context(|| format!("lancement de {:?}", cmd.get_program()))?;
-    if !out.status.success() {
-        bail!("{:?} a échoué : {}", cmd.get_program(), String::from_utf8_lossy(&out.stderr).trim());
-    }
-    Ok(out.stdout)
 }
 
 #[cfg(test)]
