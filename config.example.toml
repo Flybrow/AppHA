@@ -23,8 +23,11 @@ browser = "auto"
 #   ["chromium", "--kiosk", "--noerrdialogs", "--disable-infobars", "--renderer-process-limit=1", "{url}"]
 command = ["cog", "{url}"]
 
-# Accepter un certificat HTTPS auto-signé (WebView2 uniquement).
+# Accepter un certificat HTTPS auto-signé (WebView2, et cog via --ignore-tls-errors).
 insecure_tls = false
+
+# Mise à jour automatique depuis les releases GitHub.
+auto_update = true
 
 [window]
 mode = "fullscreen"   # fullscreen | windowed | borderless (fenêtré sans bordure)

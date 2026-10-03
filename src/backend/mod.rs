@@ -30,6 +30,8 @@ pub enum SettingsOutcome {
     Saved,
     Cancelled,
     Quit,
+    /// Une nouvelle version a été installée depuis les paramètres.
+    Updated,
 }
 
 /// Ouvre l'écran de paramètres dans un process enfant et attend sa fermeture.
@@ -42,6 +44,7 @@ pub fn open_settings(config_path: &Path, can_cancel: bool) -> Result<SettingsOut
     Ok(match status.code() {
         Some(crate::ui::settings::SAVED) => SettingsOutcome::Saved,
         Some(crate::ui::settings::QUIT) => SettingsOutcome::Quit,
+        Some(crate::ui::settings::UPDATED) => SettingsOutcome::Updated,
         _ => SettingsOutcome::Cancelled,
     })
 }

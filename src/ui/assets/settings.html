@@ -112,6 +112,19 @@
     </div>
   </section>
 
+  <section>
+    <h2>Mises à jour</h2>
+    <label class="check"><input type="checkbox" data-key="auto_update">
+      <span><span class="name">Mise à jour automatique</span>
+      <div class="hint">Vérification toutes les 6 h (Windows), chaque jour par systemd (Linux).</div></span>
+    </label>
+    <div class="inline">
+      <span class="name" id="version"></span>
+      <button type="button" id="update-check">Rechercher une mise à jour</button>
+      <button type="button" class="primary" id="update-install" hidden>Installer</button>
+    </div>
+  </section>
+
   <p class="muted">Pour revenir ici depuis le dashboard : 5 tapes rapides dans le coin haut-gauche, ou F10.</p>
 </main>
 
@@ -123,7 +136,7 @@
 </footer>
 
 <script>
-  const INITIAL = /*CONFIG*/, CAN_CANCEL = /*CAN_CANCEL*/;
+  const INITIAL = /*CONFIG*/, CAN_CANCEL = /*CAN_CANCEL*/, VERSION = /*VERSION*/;
   const fields = [...document.querySelectorAll("[data-key]")];
   const $ = (id) => document.getElementById(id);
 
@@ -160,6 +173,15 @@
     message(ok ? "Home Assistant joignable ✔" : "Home Assistant injoignable", ok ? "ok" : "err");
   };
   window.showError = (text) => { $("save").disabled = false; message(text, "err"); };
+  // état : "none" (à jour), "available" (tag), "error" (texte), "installing".
+  window.onUpdate = (state, detail) => {
+    $("update-check").disabled = false;
+    $("update-install").disabled = false;
+    $("update-install").hidden = state !== "available";
+    if (state === "none") message(`Version ${VERSION} à jour ✔`, "ok");
+    if (state === "available") { $("update-install").textContent = `Installer ${detail}`; message(`Nouvelle version ${detail} disponible`, "ok"); }
+    if (state === "error") message(detail, "err");
+  };
 
   const syncBrowser = () => ($("command-field").hidden = $("browser").value !== "external");
 
@@ -184,6 +206,17 @@
     send({ action: "save", config: collect() });
   });
   $("cancel").addEventListener("click", () => send({ action: "cancel" }));
+  $("version").textContent = `Version ${VERSION}`;
+  $("update-check").addEventListener("click", () => {
+    $("update-check").disabled = true;
+    message("Recherche…", "muted");
+    send({ action: "update_check" });
+  });
+  $("update-install").addEventListener("click", () => {
+    $("update-install").disabled = true;
+    message("Téléchargement et installation… le kiosk redémarrera.", "muted");
+    send({ action: "update_install" });
+  });
   $("quit").addEventListener("click", () => {
     if (confirm("Arrêter complètement le kiosk ?")) send({ action: "quit" });
   });

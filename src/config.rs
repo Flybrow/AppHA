@@ -91,10 +91,18 @@ pub struct Config {
     pub command: Vec<String>,
     #[serde(default)]
     pub insecure_tls: bool,
+    /// Mise à jour automatique depuis les releases GitHub (superviseur sous Windows,
+    /// minuteur systemd sous Linux).
+    #[serde(default = "default_true")]
+    pub auto_update: bool,
     #[serde(default)]
     pub window: WindowConfig,
     #[serde(default)]
     pub supervisor: SupervisorConfig,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn default_browser() -> Browser {
@@ -144,6 +152,7 @@ impl Config {
             "browser": default_browser(),
             "command": default_command(),
             "insecure_tls": false,
+            "auto_update": true,
             "window": WindowConfig::default(),
             "supervisor": SupervisorConfig::default(),
         })

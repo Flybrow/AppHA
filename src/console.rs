@@ -1,4 +1,4 @@
-﻿//! Sortie console d'un exÃ©cutable sans console (sous-systÃ¨me Windows Â« windows Â»).
+//! Sortie console d'un exÃ©cutable sans console (sous-systÃ¨me Windows Â« windows Â»).
 
 /// Rattache la console du terminal parent, s'il y en a un, pour que les messages
 /// restent visibles en ligne de commande. Vrai si une console est disponible.

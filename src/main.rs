@@ -11,6 +11,7 @@ mod memory;
 mod paths;
 mod supervisor;
 mod ui;
+mod update;
 
 use std::path::PathBuf;
 
@@ -36,6 +37,9 @@ enum Cmd {
     Webview,
     /// Vérifie la configuration et la connexion à Home Assistant.
     Check,
+    /// Installe la dernière release GitHub si elle est plus récente
+    /// (code de sortie 3 : déjà à jour).
+    Update,
     /// Ouvre l'écran de paramètres.
     #[command(name = backend::SETTINGS_SUBCOMMAND)]
     Settings {
@@ -59,15 +63,19 @@ fn main() {
 
 fn run() -> Result<()> {
     let cli = Cli::parse();
-    let path = config::locate(cli.config)?;
+    update::cleanup();
     let command = cli.command.unwrap_or(Cmd::Run);
+    if let Cmd::Update = command {
+        return manual_update();
+    }
+    let path = config::locate(cli.config)?;
     if let Cmd::Settings { first_run } = command {
         return ui::settings::run(&path, !first_run);
     }
     // Premier lancement : on demande la configuration avant de superviser.
     if matches!(command, Cmd::Run) && !path.is_file() {
         match backend::open_settings(&path, false)? {
-            backend::SettingsOutcome::Saved => {}
+            backend::SettingsOutcome::Saved | backend::SettingsOutcome::Updated => {}
             backend::SettingsOutcome::Quit => return Ok(()),
             backend::SettingsOutcome::Cancelled => anyhow::bail!("aucune configuration enregistrée"),
         }
@@ -78,8 +86,18 @@ fn run() -> Result<()> {
         Cmd::Run => supervisor::run(cfg, &path),
         Cmd::Webview => backend::webview::run(&cfg),
         Cmd::Check => check(&cfg, &path),
-        Cmd::Settings { .. } => unreachable!(),
+        Cmd::Settings { .. } | Cmd::Update => unreachable!(),
     }
+}
+
+fn manual_update() -> Result<()> {
+    let Some(release) = update::check()? else {
+        println!("déjà à jour ({})", env!("CARGO_PKG_VERSION"));
+        std::process::exit(3);
+    };
+    update::install(&release)?;
+    println!("mis à jour : {} → {}", env!("CARGO_PKG_VERSION"), release.tag);
+    Ok(())
 }
 
 fn check(cfg: &config::Config, path: &std::path::Path) -> Result<()> {

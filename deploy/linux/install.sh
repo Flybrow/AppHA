@@ -34,8 +34,11 @@ echo "==> Service systemd"
 sed -e "s/%KIOSK_USER%/$KIOSK_USER/" -e "s/%KIOSK_UID%/$(id -u "$KIOSK_USER")/" \
     "$HERE/ha-kiosk.service" > /etc/systemd/system/ha-kiosk.service
 systemctl disable getty@tty1.service 2>/dev/null || true
+install -m 0644 "$HERE/ha-kiosk-update.service" "$HERE/ha-kiosk-update.timer" /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable ha-kiosk.service
+systemctl enable --now ha-kiosk-update.timer
 
 echo "Terminé. Éditez /etc/ha-kiosk/config.toml puis : sudo systemctl start ha-kiosk"
 echo "Logs : journalctl -u ha-kiosk -f"
+echo "Mises à jour : quotidiennes (ha-kiosk-update.timer), ou à la main : sudo ha-kiosk update"

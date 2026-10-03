@@ -9,21 +9,25 @@ use url::Url;
 
 use super::{Ui, WindowSpec, js_string, render};
 use crate::config::{Config, WindowMode};
-use crate::health;
+use crate::{health, update};
 
 pub const SAVED: i32 = 0;
 pub const CANCELLED: i32 = 3;
 pub const QUIT: i32 = 5;
+/// Nouvelle version installée : le superviseur doit se relancer.
+pub const UPDATED: i32 = 6;
 
 const TEMPLATE: &str = include_str!("assets/settings.html");
 
 #[derive(Deserialize)]
-#[serde(tag = "action", rename_all = "lowercase")]
+#[serde(tag = "action", rename_all = "snake_case")]
 enum Message {
     Test { url: String },
     Save { config: serde_json::Value },
     Cancel,
     Quit,
+    UpdateCheck,
+    UpdateInstall,
 }
 
 /// `can_cancel` : faux au premier lancement, quand aucune config valide n'existe.
@@ -34,7 +38,11 @@ pub fn run(path: &Path, can_cancel: bool) -> Result<()> {
         .unwrap_or_else(Config::defaults_json);
     let html = render(
         TEMPLATE,
-        &[("CONFIG", &initial.to_string()), ("CAN_CANCEL", if can_cancel { "true" } else { "false" })],
+        &[
+            ("CONFIG", &initial.to_string()),
+            ("CAN_CANCEL", if can_cancel { "true" } else { "false" }),
+            ("VERSION", &js_string(env!("CARGO_PKG_VERSION"))),
+        ],
     );
     let path = path.to_path_buf();
     let spec = WindowSpec {
@@ -68,5 +76,27 @@ fn handle(ui: &Ui, path: &PathBuf, body: &str) {
         },
         Message::Cancel => ui.exit(CANCELLED),
         Message::Quit => ui.exit(QUIT),
+        Message::UpdateCheck => update_in_background(ui, false),
+        Message::UpdateInstall => update_in_background(ui, true),
     }
+}
+
+/// Recherche (et installe si `install`) la dernière version, hors de la boucle d'événements.
+fn update_in_background(ui: &Ui, install: bool) {
+    let ui = ui.clone();
+    std::thread::spawn(move || {
+        let result = update::check().and_then(|release| match release {
+            Some(r) if install => update::install(&r).map(|()| Some(r)),
+            other => Ok(other),
+        });
+        match result {
+            Ok(Some(_)) if install => ui.exit(UPDATED),
+            Ok(Some(r)) => ui.eval(format!("onUpdate('available', {})", js_string(&r.tag))),
+            Ok(None) => ui.eval("onUpdate('none')"),
+            Err(e) => {
+                let hint = if cfg!(unix) { " — sous Linux : sudo ha-kiosk update" } else { "" };
+                ui.eval(format!("onUpdate('error', {})", js_string(&format!("{e:#}{hint}"))));
+            }
+        }
+    });
 }
