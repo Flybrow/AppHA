@@ -1,6 +1,6 @@
 [package]
 name = "ha-kiosk"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 description = "Afficheur kiosk lÃƒÂ©ger et supervisÃƒÂ© pour les dashboards Home Assistant"
 license = "MIT"

@@ -112,7 +112,15 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
         let _ = child.kill();
         let _ = child.wait();
         match reason {
-            Stop::Exited => info!("le navigateur s'est arrêté"),
+            Stop::Exited => {
+                // Sous cage, l'arrêt du compositeur tue le navigateur : on s'arrête aussi,
+                // sinon cage (qui attend son enfant) ne se termine jamais.
+                if !crate::display::compositor_alive() {
+                    info!("compositeur arrêté, fin du kiosk");
+                    return Ok(());
+                }
+                info!("le navigateur s'est arrêté")
+            }
             Stop::Settings => {
                 info!("ouverture des paramètres");
                 let outcome = backend::open_settings(config_path, true)?;
