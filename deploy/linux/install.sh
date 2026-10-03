@@ -26,7 +26,11 @@ id "$KIOSK_USER" >/dev/null 2>&1 || useradd -m -G video,input,render "$KIOSK_USE
 usermod -aG video,input "$KIOSK_USER" || true
 
 echo "==> Binaire et configuration"
-install -m 0755 "$BIN" /usr/local/bin/ha-kiosk
+# /opt/ha-kiosk appartient au kiosk : il peut se mettre à jour seul (sans root).
+install -d -o "$KIOSK_USER" -g "$(id -gn "$KIOSK_USER")" -m 0755 /opt/ha-kiosk
+install -m 0755 -o "$KIOSK_USER" "$BIN" /opt/ha-kiosk/ha-kiosk
+rm -f /usr/local/bin/ha-kiosk
+ln -s /opt/ha-kiosk/ha-kiosk /usr/local/bin/ha-kiosk
 install -d /etc/ha-kiosk
 CONF=/etc/ha-kiosk/config.toml
 if [ ! -f "$CONF" ]; then
@@ -35,22 +39,22 @@ if [ ! -f "$CONF" ]; then
         echo "==> Assistant de configuration"
         /usr/local/bin/ha-kiosk --config "$CONF" setup </dev/tty >/dev/tty || true
     fi
-    [ -f "$CONF" ] || install -m 0640 "$HERE/../../config.example.toml" "$CONF"
+    [ -f "$CONF" ] || install -m 0600 "$HERE/../../config.example.toml" "$CONF"
 fi
-# Le fichier contient le jeton : lisible seulement par root et le kiosk.
-chown "root:$(id -gn "$KIOSK_USER")" "$CONF"
-chmod 0640 "$CONF"
+# Modifiable par le kiosk (écran de paramètres), illisible pour les autres (jeton).
+chown "$KIOSK_USER:$(id -gn "$KIOSK_USER")" "$CONF"
+chmod 0600 "$CONF"
 
 echo "==> Service systemd"
-sed -e "s/%KIOSK_USER%/$KIOSK_USER/" -e "s/%KIOSK_UID%/$(id -u "$KIOSK_USER")/" \
-    "$HERE/ha-kiosk.service" > /etc/systemd/system/ha-kiosk.service
+sed -e "s/%KIOSK_USER%/$KIOSK_USER/" -e "s/%KIOSK_UID%/$(id -u "$KIOSK_USER")/"     "$HERE/ha-kiosk.service" > /etc/systemd/system/ha-kiosk.service
 systemctl disable getty@tty1.service 2>/dev/null || true
-install -m 0644 "$HERE/ha-kiosk-update.service" "$HERE/ha-kiosk-update.timer" /etc/systemd/system/
+# Ancien minuteur de mise à jour (root) : remplacé par la mise à jour du superviseur.
+systemctl disable --now ha-kiosk-update.timer 2>/dev/null || true
+rm -f /etc/systemd/system/ha-kiosk-update.service /etc/systemd/system/ha-kiosk-update.timer
 systemctl daemon-reload
 systemctl enable ha-kiosk.service
-systemctl enable --now ha-kiosk-update.timer
 
 echo "Terminé. Démarrage : sudo systemctl start ha-kiosk (ou redémarrez)"
 echo "Reconfigurer : sudo ha-kiosk --config $CONF setup"
 echo "Logs : journalctl -u ha-kiosk -f"
-echo "Mises à jour : quotidiennes (ha-kiosk-update.timer), ou à la main : sudo ha-kiosk update"
+echo "Mises à jour : automatiques toutes les 6 h, ou à la main : sudo ha-kiosk update"

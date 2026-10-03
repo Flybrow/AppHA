@@ -75,7 +75,7 @@ Avec un clavier ou un écran tactile, l'**écran de paramètres** s'ouvre aussi 
 #### Revenir au bureau
 
 ```sh
-sudo systemctl disable --now ha-kiosk ha-kiosk-update.timer
+sudo systemctl disable --now ha-kiosk
 sudo systemctl enable getty@tty1
 sudo raspi-config nonint do_boot_behaviour B4
 sudo reboot

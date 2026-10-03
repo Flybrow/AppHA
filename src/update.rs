@@ -61,6 +61,17 @@ fn replace_current_exe(new: &Path) -> Result<()> {
     std::fs::rename(&staged, &exe).context("installation du nouvel exécutable")
 }
 
+/// Vrai si le dossier de l'exécutable est modifiable par l'utilisateur courant.
+pub fn can_self_update() -> bool {
+    let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(Path::to_path_buf)) else {
+        return false;
+    };
+    let probe = dir.join(format!(".ha-kiosk-write-test-{}", std::process::id()));
+    let ok = std::fs::write(&probe, b"").is_ok();
+    let _ = std::fs::remove_file(&probe);
+    ok
+}
+
 /// Supprime l'exécutable laissé par une mise à jour précédente (Windows).
 pub fn cleanup() {
     if let Ok(exe) = std::env::current_exe() {

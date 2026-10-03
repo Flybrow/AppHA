@@ -98,8 +98,7 @@ pub struct Config {
     pub command: Vec<String>,
     #[serde(default)]
     pub insecure_tls: bool,
-    /// Mise à jour automatique depuis les releases GitHub (superviseur sous Windows,
-    /// minuteur systemd sous Linux).
+    /// Mise à jour automatique depuis les releases GitHub, par le superviseur.
     #[serde(default = "default_true")]
     pub auto_update: bool,
     #[serde(default)]

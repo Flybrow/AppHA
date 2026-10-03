@@ -103,7 +103,7 @@ fn update_in_background(ui: &Ui, install: bool) {
             Ok(Some(r)) => ui.eval(format!("onUpdate('available', {})", js_string(&r.tag))),
             Ok(None) => ui.eval("onUpdate('none')"),
             Err(e) => {
-                let hint = if cfg!(unix) { " — sous Linux : sudo ha-kiosk update" } else { "" };
+                let hint = if cfg!(unix) { " — essayez : sudo ha-kiosk update" } else { "" };
                 ui.eval(format!("onUpdate('error', {})", js_string(&format!("{e:#}{hint}"))));
             }
         }

@@ -36,8 +36,8 @@ enum Stop {
 const UPDATE_EVERY: Duration = Duration::from_secs(6 * 3600);
 
 /// Recherche et installation des mises à jour en arrière-plan, pour ne jamais
-/// bloquer la surveillance. Sous Linux, c'est le minuteur systemd qui s'en charge
-/// (le binaire système n'est pas modifiable par l'utilisateur du kiosk).
+/// bloquer la surveillance. Seulement si l'exécutable est modifiable par
+/// l'utilisateur courant (installation Linux : /opt/ha-kiosk appartient au kiosk).
 struct Updater {
     next: Instant,
     pending: Option<Receiver<bool>>,
@@ -45,7 +45,7 @@ struct Updater {
 
 impl Updater {
     fn new(enabled: bool) -> Option<Self> {
-        (enabled && cfg!(windows)).then(|| Self { next: Instant::now(), pending: None })
+        (enabled && update::can_self_update()).then(|| Self { next: Instant::now(), pending: None })
     }
 
     /// Vrai quand une nouvelle version est installée et prête à être relancée.
@@ -191,11 +191,23 @@ fn watch(cfg: &Config, child: &mut Child, probe: &mut MemoryProbe, started: Inst
 }
 
 /// Relance le nouvel exécutable avec les mêmes arguments, puis s'arrête.
+/// Sous Unix, remplace le process sur place (même PID) : cage, dont le superviseur
+/// est l'enfant direct, ne voit pas de sortie et garde l'écran.
 fn restart_self() -> Result<()> {
     info!("redémarrage sur la nouvelle version");
     let exe = std::env::current_exe()?;
-    std::process::Command::new(exe).args(std::env::args_os().skip(1)).spawn()?;
-    Ok(())
+    let mut cmd = std::process::Command::new(exe);
+    cmd.args(std::env::args_os().skip(1));
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        return Err(cmd.exec().into());
+    }
+    #[cfg(not(unix))]
+    {
+        cmd.spawn()?;
+        Ok(())
+    }
 }
 
 /// Surveille la fin du process pendant `duration` (réaction rapide, ex. ouverture des paramètres).
