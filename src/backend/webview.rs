@@ -27,6 +27,7 @@ pub fn run(cfg: &Config) -> Result<()> {
         profile: "webview",
         close_code: 0,
         insecure_tls: cfg.insecure_tls,
+        gpu: w.gpu,
     };
     // Page de chargement locale : elle attend HA puis redirige vers le dashboard.
     let html = render(
