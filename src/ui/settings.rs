@@ -60,6 +60,7 @@ pub fn run(path: &Path, can_cancel: bool) -> Result<()> {
         insecure_tls: false,
         gpu: false,
         animations: true,
+        hide_cursor: false,
     };
 
     super::run(spec, move |builder, ui| {

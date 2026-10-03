@@ -29,6 +29,7 @@ pub fn run(cfg: &Config) -> Result<()> {
         insecure_tls: cfg.insecure_tls,
         gpu: w.gpu,
         animations: w.animations,
+        hide_cursor: w.hide_cursor,
     };
     // Page de chargement locale : elle attend HA puis redirige vers le dashboard.
     let html = render(
@@ -38,13 +39,19 @@ pub fn run(cfg: &Config) -> Result<()> {
     let auth_script = auth::init_script(&cfg.url, &cfg.token);
     let insecure = cfg.insecure_tls;
     let gpu = w.gpu;
-    let animations = w.animations;
+    let css = [(!w.animations, ui::REDUCE_MOTION_CSS), (w.hide_cursor, ui::HIDE_CURSOR_CSS)]
+        .iter()
+        .filter(|(on, _)| *on)
+        .map(|(_, css)| *css)
+        .collect::<Vec<_>>()
+        .join("
+");
     let base = cfg.url.clone();
 
     ui::run(spec, move |mut builder, ui| {
         builder = builder.with_html(html).with_initialization_script(ui::SETTINGS_GESTURE_JS);
-        if !animations {
-            builder = builder.with_initialization_script(ui::REDUCE_MOTION_JS);
+        if !css.is_empty() {
+            builder = builder.with_initialization_script(ui::inject_css_script(&css));
         }
         if std::env::var_os("HA_KIOSK_DEBUG_ANIMATIONS").is_some() {
             builder = builder.with_initialization_script(ui::DEBUG_ANIMATIONS_JS);

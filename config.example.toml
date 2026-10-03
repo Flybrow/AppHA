@@ -35,6 +35,7 @@ width = 1280          # taille en modes windowed / borderless
 height = 800
 gpu = false           # accélération matérielle : +~70 Mo ; inutile sur Pi 3 (GPU trop ancien)
 animations = false    # false = bien plus fluide sur Pi (défaut sous Linux)
+hide_cursor = false   # true = curseur masqué (écran tactile)
 rotation = 0          # 0 | 90 | 180 | 270 (Linux/cage ; écran officiel Pi retourné : 180)
 
 [supervisor]

@@ -16,11 +16,16 @@ Dans Home Assistant, ouvrez **votre profil** (en bas à gauche), puis l'onglet *
 
 ---
 
-## Raspberry Pi
+## Installation
+
+Cliquez sur votre système pour afficher les instructions.
+
+<details>
+<summary><b>🍓 Raspberry Pi</b></summary>
 
 Fonctionne sur Pi 3, 4 et 5, avec **Raspberry Pi OS 64 bits** (la version Lite suffit). Pour vérifier : `dpkg --print-architecture` doit afficher `arm64`.
 
-### Installation
+#### Installation
 
 Dans un terminal sur le Pi, ou en SSH :
 
@@ -39,9 +44,11 @@ sudo reboot
 
 Le Pi démarre alors directement sur le dashboard.
 
+> Écran tactile ? `sudo ha-kiosk config hide_cursor oui` masque le curseur.
+>
 > L'écran est à l'envers ? Lancez `sudo ha-kiosk config rotation 180`, puis `sudo systemctl restart ha-kiosk`. L'écran officiel 7" monté dans certains boîtiers a besoin de 180.
 
-### Changer un réglage
+#### Changer un réglage
 
 ```sh
 sudo ha-kiosk config                  # affiche tous les réglages
@@ -55,7 +62,7 @@ Tapez `ha-kiosk` seul pour afficher l'aide complète.
 
 Avec un clavier ou un écran tactile, l'**écran de paramètres** s'ouvre aussi directement sur le kiosk : **5 tapes rapides dans le coin haut-gauche**, ou **F10**.
 
-### Commandes utiles
+#### Commandes utiles
 
 | Besoin | Commande |
 |---|---|
@@ -65,7 +72,7 @@ Avec un clavier ou un écran tactile, l'**écran de paramètres** s'ouvre aussi 
 | Voir les journaux | `journalctl -b \| grep ha-kiosk` |
 | Tester la connexion à HA | `sudo ha-kiosk check` |
 
-### Revenir au bureau
+#### Revenir au bureau
 
 ```sh
 sudo systemctl disable --now ha-kiosk ha-kiosk-update.timer
@@ -74,9 +81,10 @@ sudo raspi-config nonint do_boot_behaviour B4
 sudo reboot
 ```
 
----
+</details>
 
-## Windows
+<details>
+<summary><b>🪟 Windows</b></summary>
 
 Windows 10 ou 11 (64 bits).
 
@@ -94,9 +102,10 @@ Windows 10 ou 11 (64 bits).
 
 Les mises à jour s'installent toutes seules. Vous pouvez aussi lancer la recherche à la main dans les paramètres (**Rechercher une mise à jour**).
 
----
+</details>
 
-## Linux avec bureau (PC, Pi avec bureau)
+<details>
+<summary><b>🐧 Linux avec bureau (PC, Pi avec bureau)</b></summary>
 
 Téléchargez l'archive correspondant à votre machine depuis la [dernière version](https://github.com/Flybrow/AppHA/releases/latest) : `linux-aarch64` pour un Raspberry Pi, `linux-x86_64` pour un PC. Ensuite :
 
@@ -106,7 +115,9 @@ tar xzf ha-kiosk-linux-*.tar.gz
 ./ha-kiosk/ha-kiosk run
 ```
 
-Au premier lancement, l'écran de paramètres s'ouvre, comme sous Windows. Pour un kiosk dédié, préférez l'installation [Raspberry Pi](#raspberry-pi) : elle fonctionne aussi sur un PC Linux.
+Au premier lancement, l'écran de paramètres s'ouvre, comme sous Windows. Pour un kiosk dédié, préférez l'installation Raspberry Pi ci-dessus : elle fonctionne aussi sur un PC Linux.
+
+</details>
 
 ---
 
@@ -123,6 +134,7 @@ Ils sont disponibles dans l'écran de paramètres, dans l'assistant (`ha-kiosk s
 | `mode` | `fullscreen`, `windowed` ou `borderless` |
 | `rotation` | `0`, `90`, `180` ou `270` (Linux) |
 | `animations` | `non` = bien plus fluide sur les petites machines (défaut sous Linux) |
+| `hide_cursor` | Masque le curseur de la souris (écran tactile) |
 | `gpu` | Accélération matérielle : environ 70 Mo de RAM en plus, inutile sur Pi 3 |
 | `restart_every_hours` | Redémarrage préventif (`0` = jamais) |
 | `max_memory_mb` | Redémarre le navigateur au-delà de cette RAM (`0` = pas de limite) |
@@ -134,7 +146,7 @@ Ils sont disponibles dans l'écran de paramètres, dans l'assistant (`ha-kiosk s
 ## Questions fréquentes
 
 **Écran noir avec seulement le curseur (Linux)**
-Mettez à jour (`sudo ha-kiosk update`) et réinstallez le service avec la commande d'installation : les versions récentes corrigent ce problème.
+Relancez la commande d'installation (`curl …`) : elle met à jour le programme **et** le service, qui contient la correction. `sudo ha-kiosk update` ne met à jour que le programme.
 
 **L'affichage est lent sur Raspberry Pi**
 Vérifiez que `animations` vaut `non`. Un Pi 3 bride sa fréquence au-delà de 60 °C : un dissipateur ou un petit ventilateur aide. Une alimentation trop faible (sous-tension) le ralentit aussi : `vcgencmd get_throttled` doit afficher `0x0`.

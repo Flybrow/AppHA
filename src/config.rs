@@ -45,6 +45,8 @@ pub struct WindowConfig {
     /// Animations et transitions des pages. Désactivées, le frontend HA repeint
     /// beaucoup moins : gros gain de CPU sur les petites machines (défaut : non sous Linux).
     pub animations: bool,
+    /// Masque le curseur de la souris (écran tactile).
+    pub hide_cursor: bool,
     /// Ancien réglage (`fullscreen = false`), converti en `mode` au chargement.
     #[serde(skip_serializing)]
     fullscreen: Option<bool>,
@@ -52,7 +54,7 @@ pub struct WindowConfig {
 
 impl Default for WindowConfig {
     fn default() -> Self {
-        Self { mode: WindowMode::Fullscreen, width: 1280, height: 800, gpu: false, rotation: 0, animations: !cfg!(target_os = "linux"), fullscreen: None }
+        Self { mode: WindowMode::Fullscreen, width: 1280, height: 800, gpu: false, rotation: 0, animations: !cfg!(target_os = "linux"), hide_cursor: false, fullscreen: None }
     }
 }
 

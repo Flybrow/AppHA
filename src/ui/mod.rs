@@ -14,8 +14,19 @@ use crate::paths;
 
 /// Script injecté dans chaque page : geste et raccourci d'ouverture des paramètres.
 pub const SETTINGS_GESTURE_JS: &str = include_str!("assets/gesture.js");
-/// Neutralise animations et transitions CSS (option `window.animations = false`).
-pub const REDUCE_MOTION_JS: &str = include_str!("assets/reduce-motion.js");
+const INJECT_CSS_JS: &str = include_str!("assets/inject-css.js");
+
+/// Animations et transitions quasi instantanées (1 ms) plutôt que supprimées : des
+/// cartes (Bubble Card…) attendent animationend / transitionend pour ouvrir leurs popups.
+pub const REDUCE_MOTION_CSS: &str = "*, *::before, *::after { animation-delay: 0s !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-delay: 0s !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }";
+
+/// Curseur invisible partout (écran tactile).
+pub const HIDE_CURSOR_CSS: &str = "*, *::before, *::after { cursor: none !important; }";
+
+/// Script qui applique `css` à toute la page, shadow roots compris.
+pub fn inject_css_script(css: &str) -> String {
+    INJECT_CSS_JS.replace("/*CSS*/", &js_string(css))
+}
 /// Journalise animations et boucles d'affichage (HA_KIOSK_DEBUG_ANIMATIONS=1).
 pub const DEBUG_ANIMATIONS_JS: &str = include_str!("assets/debug-animations.js");
 
@@ -52,6 +63,8 @@ pub struct WindowSpec<'a> {
     pub insecure_tls: bool,
     /// Accélération matérielle (Linux : politique WebKitGTK ; Windows : voir `backend::webview`).
     pub gpu: bool,
+    /// Curseur de la souris masqué (écran tactile).
+    pub hide_cursor: bool,
     /// Faux : demande aussi au système de réduire les animations (prefers-reduced-motion, Linux).
     #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
     pub animations: bool,
@@ -84,6 +97,9 @@ where
     }
     let webview = attach(builder, &window, spec.insecure_tls, spec.gpu).context("création de la WebView")?;
     window.set_focus();
+    if spec.hide_cursor {
+        window.set_cursor_visible(false);
+    }
     let close_code = spec.close_code;
 
     event_loop.run(move |event, _, control_flow| {

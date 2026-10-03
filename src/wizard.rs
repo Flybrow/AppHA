@@ -80,6 +80,7 @@ pub fn run(path: &Path) -> Result<()> {
     }
     cfg["window"]["animations"] =
         json!(ask_bool("Animations des pages (n = bien plus fluide sur Raspberry Pi)", bool_at(&cfg, "/window/animations"))?);
+    cfg["window"]["hide_cursor"] = json!(ask_bool("Masquer le curseur (écran tactile)", bool_at(&cfg, "/window/hide_cursor"))?);
     cfg["window"]["gpu"] = json!(ask_bool("Accélération GPU (+~70 Mo, animations plus fluides)", bool_at(&cfg, "/window/gpu"))?);
 
     println!("\n— Stabilité et mises à jour");
