@@ -99,7 +99,8 @@
     </label>
     <label><span class="name">Navigateur</span>
       <select data-key="browser" id="browser">
-        <option value="webview">Intégré (recommandé)</option>
+        <option value="auto">Automatique (recommandé)</option>
+        <option value="webview">Intégré</option>
         <option value="external">Externe (cog, Chromium…)</option>
       </select>
     </label>
@@ -177,7 +178,11 @@
 
   function collect() {
     const cfg = structuredClone(INITIAL);
-    fields.forEach((el) => setPath(cfg, el.dataset.key, read(el)));
+    // Une liste sans option correspondant à la valeur d'origine renvoie "" : on garde l'origine.
+    fields.forEach((el) => {
+      if (el.tagName === "SELECT" && el.value === "") return;
+      setPath(cfg, el.dataset.key, read(el));
+    });
     return cfg;
   }
 
