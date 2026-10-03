@@ -189,14 +189,16 @@ impl Config {
 }
 
 /// Fichier de config à utiliser : argument explicite, sinon à côté de l'exécutable,
-/// sinon dans le dossier de config utilisateur. S'il n'existe nulle part, renvoie
+/// sinon dans /etc/ha-kiosk (Linux), sinon dans le dossier de config utilisateur. S'il n'existe nulle part, renvoie
 /// l'emplacement où le créer (dossier de config utilisateur).
 pub fn locate(explicit: Option<PathBuf>) -> Result<PathBuf> {
     if let Some(p) = explicit {
         return Ok(p);
     }
+    // /etc/ha-kiosk : emplacement de l'installation Linux (service systemd).
+    let system = cfg!(target_os = "linux").then(|| PathBuf::from("/etc/ha-kiosk"));
     let candidates: Vec<PathBuf> =
-        [paths::exe_dir(), paths::config_dir()].into_iter().flatten().map(|d| d.join("config.toml")).collect();
+        [paths::exe_dir(), system, paths::config_dir()].into_iter().flatten().map(|d| d.join("config.toml")).collect();
     candidates
         .iter()
         .find(|p| p.is_file())

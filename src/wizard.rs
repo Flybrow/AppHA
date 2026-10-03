@@ -93,7 +93,7 @@ pub fn run(path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn ask(question: &str, default: &str) -> Result<String> {
+pub(crate) fn ask(question: &str, default: &str) -> Result<String> {
     if default.is_empty() {
         print!("{question} : ");
     } else {
@@ -105,13 +105,13 @@ fn ask(question: &str, default: &str) -> Result<String> {
 }
 
 /// Comme `ask`, sans réafficher le secret actuel.
-fn ask_secret(question: &str, current: &str) -> Result<String> {
+pub(crate) fn ask_secret(question: &str, current: &str) -> Result<String> {
     let shown = if current.is_empty() { "" } else { "inchangé" };
     let answer = ask(question, shown)?;
     Ok(if answer == shown { current.to_string() } else if answer == "-" { String::new() } else { answer })
 }
 
-fn ask_bool(question: &str, default: bool) -> Result<bool> {
+pub(crate) fn ask_bool(question: &str, default: bool) -> Result<bool> {
     loop {
         let answer = ask(&format!("{question} (o/n)"), if default { "o" } else { "n" })?;
         match answer.to_lowercase().as_str() {
@@ -122,7 +122,7 @@ fn ask_bool(question: &str, default: bool) -> Result<bool> {
     }
 }
 
-fn ask_u64(question: &str, default: u64) -> Result<u64> {
+pub(crate) fn ask_u64(question: &str, default: u64) -> Result<u64> {
     loop {
         match ask(question, &default.to_string())?.parse() {
             Ok(n) => return Ok(n),
@@ -132,10 +132,14 @@ fn ask_u64(question: &str, default: u64) -> Result<u64> {
 }
 
 /// Choix numéroté ; renvoie la valeur choisie.
-fn choose(question: &str, options: &[(&str, &str)], default: &str) -> Result<String> {
+pub(crate) fn choose(question: &str, options: &[(&str, &str)], default: &str) -> Result<String> {
     println!("{question} :");
     for (i, (value, help)) in options.iter().enumerate() {
-        println!("  {}) {value} — {help}", i + 1);
+        if help.is_empty() {
+            println!("  {}) {value}", i + 1);
+        } else {
+            println!("  {}) {value} — {help}", i + 1);
+        }
     }
     let default_idx = options.iter().position(|(v, _)| *v == default).unwrap_or(0) + 1;
     loop {

@@ -1,9 +1,22 @@
-//! Sortie console d'un exÃ©cutable sans console (sous-systÃ¨me Windows Â« windows Â»).
+//! Sortie console d'un exécutable sans console (sous-système Windows « windows »).
 
 /// Rattache la console du terminal parent, s'il y en a un, pour que les messages
 /// restent visibles en ligne de commande. Vrai si une console est disponible.
-#[cfg(all(windows, not(debug_assertions)))]
 pub fn attach() -> bool {
+    let attached = attach_parent();
+    let _ = ATTACHED.set(attached);
+    attached
+}
+
+/// Résultat de `attach` (faux s'il n'a pas été appelé).
+pub fn attached() -> bool {
+    ATTACHED.get().copied().unwrap_or(false)
+}
+
+static ATTACHED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+
+#[cfg(all(windows, not(debug_assertions)))]
+fn attach_parent() -> bool {
     const ATTACH_PARENT_PROCESS: u32 = u32::MAX;
     unsafe extern "system" {
         fn AttachConsole(pid: u32) -> i32;
@@ -12,7 +25,7 @@ pub fn attach() -> bool {
 }
 
 #[cfg(not(all(windows, not(debug_assertions))))]
-pub fn attach() -> bool {
+fn attach_parent() -> bool {
     true
 }
 

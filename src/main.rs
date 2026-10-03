@@ -4,6 +4,7 @@
 mod auth;
 mod backend;
 mod config;
+mod config_cmd;
 mod console;
 mod display;
 mod health;
@@ -18,10 +19,10 @@ mod wizard;
 use std::path::PathBuf;
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(version, about)]
+#[command(version, about, after_help = EXAMPLES)]
 struct Cli {
     /// Chemin du fichier de configuration.
     #[arg(short, long, global = true)]
@@ -32,10 +33,17 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Lance et supervise le navigateur (par défaut).
+    /// Lance et supervise le kiosk (par défaut hors terminal : systemd, double-clic).
     Run,
-    /// Ouvre directement la WebView intégrée, sans supervision.
-    #[command(name = backend::WEBVIEW_SUBCOMMAND)]
+    /// Affiche ou modifie un réglage : `config`, `config token`, `config rotation 180`.
+    Config {
+        /// Nom du réglage (sans nom : liste de tous les réglages).
+        name: Option<String>,
+        /// Nouvelle valeur (sans valeur : question interactive).
+        value: Option<String>,
+    },
+    /// Interne : WebView intégrée sans supervision.
+    #[command(name = backend::WEBVIEW_SUBCOMMAND, hide = true)]
     Webview,
     /// Vérifie la configuration et la connexion à Home Assistant.
     Check,
@@ -53,6 +61,15 @@ enum Cmd {
     },
 }
 
+const EXAMPLES: &str = "Exemples :
+  ha-kiosk setup                 assistant complet (questions / réponses)
+  ha-kiosk config                liste des réglages et de leurs valeurs
+  ha-kiosk config token          modifie le jeton (question interactive)
+  ha-kiosk config rotation 180   modifie directement un réglage
+  ha-kiosk check                 teste la config et la connexion à HA
+  ha-kiosk update                installe la dernière version
+  ha-kiosk run                   lance le kiosk";
+
 fn main() {
     let console = console::attach();
     if let Err(e) = run() {
@@ -66,13 +83,24 @@ fn main() {
 }
 
 fn run() -> Result<()> {
-    let cli = Cli::parse();
+    let mut command = Cli::command().after_long_help(format!("{EXAMPLES}
+
+{}", config_cmd::help_text()));
+    let cli = Cli::from_arg_matches(&command.get_matches_mut()).map_err(|e| e.exit()).unwrap();
+    // `ha-kiosk` seul tapé dans un terminal : aide. Lancé par systemd, cage ou un double-clic : kiosk.
+    if cli.command.is_none() && cli.config.is_none() && launched_from_terminal() {
+        command.print_long_help()?;
+        return Ok(());
+    }
     update::cleanup();
     let command = cli.command.unwrap_or(Cmd::Run);
     if let Cmd::Update = command {
         return manual_update();
     }
     let path = config::locate(cli.config)?;
+    if let Cmd::Config { name, value } = &command {
+        return config_cmd::run(&path, name.as_deref(), value.as_deref());
+    }
     if let Cmd::Setup = command {
         return wizard::run(&path);
     }
@@ -96,7 +124,7 @@ fn run() -> Result<()> {
         }
         Cmd::Webview => backend::webview::run(&cfg),
         Cmd::Check => check(&cfg, &path),
-        Cmd::Settings { .. } | Cmd::Update | Cmd::Setup => unreachable!(),
+        Cmd::Settings { .. } | Cmd::Update | Cmd::Setup | Cmd::Config { .. } => unreachable!(),
     }
 }
 
@@ -118,4 +146,16 @@ fn check(cfg: &config::Config, path: &std::path::Path) -> Result<()> {
     let ok = health::is_reachable(&cfg.url);
     println!("joignable   : {}", if ok { "oui" } else { "NON" });
     if ok { Ok(()) } else { anyhow::bail!("Home Assistant injoignable") }
+}
+
+/// Vrai si un humain a lancé la commande dans un terminal (et non systemd, cage ou l'Explorateur).
+fn launched_from_terminal() -> bool {
+    use std::io::IsTerminal;
+    if cfg!(windows) {
+        // En release, la console n'existe que si un terminal parent l'a prêtée.
+        return console::attached() && std::io::stdout().is_terminal();
+    }
+    std::env::var_os("INVOCATION_ID").is_none()
+        && std::env::var_os("WAYLAND_DISPLAY").is_none()
+        && std::io::stdin().is_terminal()
 }
