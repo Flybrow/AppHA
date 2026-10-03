@@ -184,13 +184,20 @@ impl Config {
     /// Écrit la config de façon atomique (fichier temporaire puis renommage) : une
     /// coupure de courant ne laisse jamais un fichier tronqué. Sous Unix, le
     /// propriétaire et les droits du fichier existant sont conservés (jeton protégé).
+    /// Si le dossier n'est pas modifiable (fichier seul accordé), écriture directe.
     pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir).with_context(|| format!("création de {}", dir.display()))?;
         }
         let raw = toml::to_string_pretty(self).context("sérialisation de la config")?;
         let tmp = path.with_extension("toml.tmp");
-        std::fs::write(&tmp, raw).with_context(|| format!("écriture de {}", tmp.display()))?;
+        match std::fs::write(&tmp, &raw) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied && path.is_file() => {
+                return std::fs::write(path, raw).with_context(|| format!("écriture de {}", path.display()));
+            }
+            Err(e) => return Err(e).with_context(|| format!("écriture de {}", tmp.display())),
+        }
         #[cfg(unix)]
         copy_ownership(path, &tmp)?;
         std::fs::rename(&tmp, path).with_context(|| format!("remplacement de {}", path.display()))

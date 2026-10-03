@@ -31,7 +31,8 @@ install -d -o "$KIOSK_USER" -g "$(id -gn "$KIOSK_USER")" -m 0755 /opt/ha-kiosk
 install -m 0755 -o "$KIOSK_USER" "$BIN" /opt/ha-kiosk/ha-kiosk
 rm -f /usr/local/bin/ha-kiosk
 ln -s /opt/ha-kiosk/ha-kiosk /usr/local/bin/ha-kiosk
-install -d /etc/ha-kiosk
+# Dossier au kiosk : l'enregistrement atomique y crée un fichier temporaire.
+install -d -o "$KIOSK_USER" -g "$(id -gn "$KIOSK_USER")" -m 0700 /etc/ha-kiosk
 CONF=/etc/ha-kiosk/config.toml
 if [ ! -f "$CONF" ]; then
     # Assistant interactif si un terminal est disponible (y compris via curl | sh).
