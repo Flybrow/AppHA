@@ -1,0 +1,25 @@
+[package]
+name = "ha-kiosk"
+version = "0.1.0"
+edition = "2024"
+description = "Afficheur kiosk léger et supervisé pour les dashboards Home Assistant"
+license = "MIT"
+repository = "https://github.com/Flybrow/AppHA"
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+sysinfo = { version = "0.39.6", default-features = false, features = ["system"] }
+tao = "0.37.1"
+toml = "1.1.6"
+url = { version = "2.5.8", features = ["serde"] }
+wry = "0.57.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -1,0 +1,62 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04-arm, name: linux-aarch64 }   # Raspberry Pi 3/4/5 (OS 64 bits)
+          - { os: ubuntu-24.04, name: linux-x86_64 }
+          - { os: windows-latest, name: windows-x86_64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Dépendances WebKitGTK
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
+      - run: cargo build --release --locked
+
+      - name: Archive Linux
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p dist/ha-kiosk
+          cp target/release/ha-kiosk config.example.toml README.md LICENSE dist/ha-kiosk/
+          cp -r deploy dist/ha-kiosk/
+          tar -C dist -czf ha-kiosk-${{ matrix.name }}.tar.gz ha-kiosk
+      - name: Archive Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory dist/ha-kiosk | Out-Null
+          Copy-Item target/release/ha-kiosk.exe, config.example.toml, README.md, LICENSE dist/ha-kiosk/
+          Compress-Archive dist/ha-kiosk ha-kiosk-${{ matrix.name }}.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ha-kiosk-${{ matrix.name }}
+          path: ha-kiosk-${{ matrix.name }}.*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ha-kiosk-*
+          generate_release_notes: true

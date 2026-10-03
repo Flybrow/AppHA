@@ -1,0 +1,20 @@
+[Unit]
+Description=HA Kiosk (dashboard Home Assistant)
+After=network-online.target systemd-user-sessions.service
+Wants=network-online.target
+
+[Service]
+User=%KIOSK_USER%
+PAMName=login
+TTYPath=/dev/tty1
+StandardInput=tty
+StandardError=journal
+Environment=XDG_RUNTIME_DIR=/run/user/%KIOSK_UID%
+# cage : compositeur Wayland mono-application (aucun bureau, aucun gestionnaire de fenêtres).
+ExecStart=/usr/bin/cage -d -- /usr/local/bin/ha-kiosk --config /etc/ha-kiosk/config.toml
+# on-failure : « Quitter le kiosk » (sortie normale) arrête le service.
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Paramètres — HA Kiosk</title>
+<style>/*THEME*/</style>
+<style>
+  body { overflow-y: auto; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 120px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px 20px; margin-top: 20px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 4px; }
+  label { display: block; padding: 12px 0; border-top: 1px solid var(--border); }
+  h2 + label { border-top: 0; }
+  .name { font-weight: 600; }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  input[type=text], input[type=url], input[type=password], input[type=number], select, textarea {
+    width: 100%; margin-top: 8px; padding: 10px 12px; min-height: 44px; font: inherit;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text);
+  }
+  textarea { font-family: ui-monospace, Consolas, monospace; font-size: 14px; resize: vertical; }
+  label.check { display: flex; gap: 14px; align-items: center; }
+  label.check input { width: 24px; height: 24px; flex: none; accent-color: var(--accent); }
+  .row { display: flex; gap: 12px; }
+  .row > label { flex: 1; }
+  .inline { display: flex; gap: 8px; align-items: end; }
+  .inline input { flex: 1; }
+  footer {
+    position: fixed; inset: auto 0 0 0; background: var(--surface); border-top: 1px solid var(--border);
+    padding: 12px 16px; display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap;
+  }
+  #message { margin-right: auto; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Paramètres</h1>
+  <div class="muted">HA Kiosk — affichage de votre dashboard Home Assistant</div>
+
+  <section>
+    <h2>Home Assistant</h2>
+    <label><span class="name">Adresse</span>
+      <div class="hint">http(s)://IP-ou-domaine:port — local, HTTPS ou Nabu Casa.</div>
+      <div class="inline">
+        <input type="url" data-key="url" placeholder="http://homeassistant.local:8123" required>
+        <button type="button" id="test">Tester</button>
+      </div>
+    </label>
+    <label><span class="name">Dashboard</span>
+      <div class="hint">Chemin du dashboard, ex. <code>lovelace-kiosk/0</code>. Vide = dashboard par défaut.</div>
+      <input type="text" data-key="dashboard" placeholder="lovelace/0">
+    </label>
+    <label><span class="name">Jeton d'accès longue durée</span>
+      <div class="hint">Profil HA › Sécurité › Jetons d'accès longue durée. Connexion automatique ; vide = écran de connexion HA.</div>
+      <div class="inline">
+        <input type="password" data-key="token" autocomplete="off">
+        <button type="button" id="reveal">Afficher</button>
+      </div>
+    </label>
+    <label class="check"><input type="checkbox" data-key="insecure_tls">
+      <span><span class="name">Accepter un certificat auto-signé</span>
+      <div class="hint">Windows uniquement. Sous Linux, installez le certificat dans le système.</div></span>
+    </label>
+  </section>
+
+  <section>
+    <h2>Affichage</h2>
+    <label><span class="name">Mode d'affichage</span>
+      <select data-key="window.mode">
+        <option value="fullscreen">Plein écran</option>
+        <option value="windowed">Fenêtré</option>
+        <option value="borderless">Fenêtré sans bordure</option>
+      </select>
+    </label>
+    <div class="row">
+      <label><span class="name">Largeur</span><input type="number" min="200" data-key="window.width"></label>
+      <label><span class="name">Hauteur</span><input type="number" min="200" data-key="window.height"></label>
+    </div>
+    <label class="check"><input type="checkbox" data-key="window.gpu">
+      <span><span class="name">Accélération matérielle (GPU)</span>
+      <div class="hint">Animations plus fluides, mais environ 70 Mo de RAM en plus.</div></span>
+    </label>
+    <label><span class="name">Navigateur</span>
+      <select data-key="browser" id="browser">
+        <option value="webview">Intégré (recommandé)</option>
+        <option value="external">Externe (cog, Chromium…)</option>
+      </select>
+    </label>
+    <label id="command-field"><span class="name">Commande du navigateur externe</span>
+      <div class="hint">Un argument par ligne ; <code>{url}</code> = adresse du dashboard. Les paramètres ne seront plus accessibles depuis l'écran.</div>
+      <textarea rows="3" data-key="command" data-list></textarea>
+    </label>
+  </section>
+
+  <section>
+    <h2>Stabilité</h2>
+    <label><span class="name">Redémarrage préventif (heures)</span>
+      <div class="hint">0 = jamais.</div>
+      <input type="number" min="0" data-key="supervisor.restart_every_hours">
+    </label>
+    <label><span class="name">Limite de RAM du navigateur (Mo)</span>
+      <div class="hint">Au-delà, le navigateur est relancé. 0 = aucune limite. Ex. 350 sur un Raspberry Pi 3.</div>
+      <input type="number" min="0" data-key="supervisor.max_memory_mb">
+    </label>
+    <label class="check"><input type="checkbox" data-key="supervisor.reload_on_reconnect">
+      <span class="name">Recharger quand Home Assistant redevient joignable</span>
+    </label>
+    <div class="row">
+      <label><span class="name">Vérification toutes les (s)</span><input type="number" min="1" data-key="supervisor.check_interval_secs"></label>
+      <label><span class="name">Échecs avant coupure</span><input type="number" min="1" data-key="supervisor.failures_before_down"></label>
+    </div>
+  </section>
+
+  <p class="muted">Pour revenir ici depuis le dashboard : 5 tapes rapides dans le coin haut-gauche, ou F10.</p>
+</main>
+
+<footer>
+  <span id="message" role="status"></span>
+  <button type="button" id="quit">Quitter le kiosk</button>
+  <button type="button" id="cancel">Annuler</button>
+  <button type="button" class="primary" id="save">Enregistrer</button>
+</footer>
+
+<script>
+  const INITIAL = /*CONFIG*/, CAN_CANCEL = /*CAN_CANCEL*/;
+  const fields = [...document.querySelectorAll("[data-key]")];
+  const $ = (id) => document.getElementById(id);
+
+  const getPath = (obj, path) => path.split(".").reduce((o, k) => o?.[k], obj);
+  const setPath = (obj, path, value) => {
+    const keys = path.split("."), last = keys.pop();
+    keys.reduce((o, k) => (o[k] ??= {}), obj)[last] = value;
+  };
+
+  function read(el) {
+    if (el.type === "checkbox") return el.checked;
+    if (el.type === "number") return Number(el.value) || 0;
+    if (el.hasAttribute("data-list")) return el.value.split("\n").map((s) => s.trim()).filter(Boolean);
+    return el.value.trim();
+  }
+  function write(el, v) {
+    if (el.type === "checkbox") el.checked = !!v;
+    else if (el.hasAttribute("data-list")) el.value = (v || []).join("\n");
+    else el.value = v ?? "";
+  }
+
+  function collect() {
+    const cfg = structuredClone(INITIAL);
+    fields.forEach((el) => setPath(cfg, el.dataset.key, read(el)));
+    return cfg;
+  }
+
+  function message(text, cls = "") { $("message").textContent = text; $("message").className = cls; }
+  const send = (msg) => window.ipc.postMessage(JSON.stringify(msg));
+
+  // Réponses appelées par Rust.
+  window.onTestResult = (ok) => {
+    $("test").disabled = false;
+    message(ok ? "Home Assistant joignable ✔" : "Home Assistant injoignable", ok ? "ok" : "err");
+  };
+  window.showError = (text) => { $("save").disabled = false; message(text, "err"); };
+
+  const syncBrowser = () => ($("command-field").hidden = $("browser").value !== "external");
+
+  fields.forEach((el) => write(el, getPath(INITIAL, el.dataset.key)));
+  syncBrowser();
+  $("cancel").hidden = !CAN_CANCEL;
+
+  $("browser").addEventListener("change", syncBrowser);
+  $("reveal").addEventListener("click", () => {
+    const input = document.querySelector("[data-key=token]");
+    input.type = input.type === "password" ? "text" : "password";
+    $("reveal").textContent = input.type === "password" ? "Afficher" : "Masquer";
+  });
+  $("test").addEventListener("click", () => {
+    $("test").disabled = true;
+    message("Test en cours…", "muted");
+    send({ action: "test", url: read(document.querySelector("[data-key=url]")) });
+  });
+  $("save").addEventListener("click", () => {
+    $("save").disabled = true;
+    message("Enregistrement…", "muted");
+    send({ action: "save", config: collect() });
+  });
+  $("cancel").addEventListener("click", () => send({ action: "cancel" }));
+  $("quit").addEventListener("click", () => {
+    if (confirm("Arrêter complètement le kiosk ?")) send({ action: "quit" });
+  });
+</script>
+</body>
+</html>
