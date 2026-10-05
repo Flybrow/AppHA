@@ -17,6 +17,8 @@ Environment=XDG_RUNTIME_DIR=/run/user/%KIOSK_UID%
 # black screen. The kiosk only shows Home Assistant, so it is disabled.
 Environment=WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
 TimeoutStopSec=10
+# Touchscreen follows the screen rotation (root: writes a udev rule).
+ExecStartPre=+/usr/local/lib/ha-kiosk/touch-rotation.sh /etc/ha-kiosk/config.toml
 # cage: single-application Wayland compositor (no desktop, no window manager).
 ExecStart=/usr/bin/cage -d -- /usr/local/bin/ha-kiosk --config /etc/ha-kiosk/config.toml run
 # on-failure: "Quit the kiosk" (normal exit) stops the service.

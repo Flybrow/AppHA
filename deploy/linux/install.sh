@@ -46,6 +46,9 @@ fi
 chown "$KIOSK_USER:$(id -gn "$KIOSK_USER")" "$CONF"
 chmod 0600 "$CONF"
 
+install -d -m 0755 /usr/local/lib/ha-kiosk
+install -m 0755 -o root -g root "$HERE/touch-rotation.sh" /usr/local/lib/ha-kiosk/touch-rotation.sh
+
 echo "==> systemd service"
 sed -e "s/%KIOSK_USER%/$KIOSK_USER/" -e "s/%KIOSK_UID%/$(id -u "$KIOSK_USER")/"     "$HERE/ha-kiosk.service" > /etc/systemd/system/ha-kiosk.service
 systemctl disable getty@tty1.service 2>/dev/null || true
