@@ -145,6 +145,12 @@ pub fn run(mut cfg: Config, config_path: &Path) -> Result<()> {
                     match Config::load(config_path) {
                         Ok(new) => {
                             info!("configuration reloaded");
+                            if new.window.rotation != cfg.window.rotation && touch_rotation_installed() {
+                                // The touchscreen is rotated before cage starts: have systemd
+                                // restart the service (Restart=on-failure).
+                                info!("rotation changed, restarting the service for the touchscreen");
+                                std::process::exit(75);
+                            }
                             cfg = new;
                             crate::i18n::set(cfg.language);
                             crate::display::apply_rotation(&cfg);
@@ -204,6 +210,11 @@ fn watch(cfg: &Config, child: &mut Child, probe: &mut MemoryProbe, started: Inst
 /// Restarts the new executable with the same arguments, then exits.
 /// On Unix, replaces the process in place (same PID): cage, whose direct child is
 /// the supervisor, sees no exit and keeps the screen.
+/// True when running as the systemd service that rotates the touchscreen at startup.
+fn touch_rotation_installed() -> bool {
+    cfg!(unix) && std::env::var_os("INVOCATION_ID").is_some() && std::path::Path::new("/usr/local/lib/ha-kiosk/touch-rotation.sh").exists()
+}
+
 fn restart_self() -> Result<()> {
     info!("restarting on the new version");
     let exe = std::env::current_exe()?;

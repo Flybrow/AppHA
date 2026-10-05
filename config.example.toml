@@ -44,7 +44,7 @@ gpu = false           # hardware acceleration: +~70 MB; useless on a Pi 3 (GPU t
 animations = false    # false = much smoother on a Pi (default on Linux)
 hide_cursor = false   # true = hidden cursor (touch screen)
 rotation = 0          # 0 | 90 | 180 | 270 (Linux/cage; official Pi screen upside down: 180)
-                     # the touchscreen follows after `sudo systemctl restart ha-kiosk`
+                     # the touchscreen follows (the service restarts by itself)
 
 [supervisor]
 check_interval_secs = 10
